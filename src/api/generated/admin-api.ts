@@ -33,6 +33,9 @@ import type {
   ListUsersParams,
   LoginRequest,
   NotFoundResponse,
+  PermissionOption,
+  RoleCode,
+  RoleOption,
   RoleSummary,
   UnauthorizedResponse,
   UpdateRoleRequest,
@@ -498,7 +501,7 @@ export const createUser = (
 
 export const getCreateUserMutationKey = () => ['createUser'] as const;
 
-export const getCreateUserMutationOptions = <TError = ErrorType<BadRequestResponse | ForbiddenResponse>,
+export const getCreateUserMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError,CreateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError,CreateUserMutationVariables, TContext> => {
 
@@ -527,13 +530,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateUserMutationResult = NonNullable<Awaited<ReturnType<typeof createUser>>>
     export type CreateUserMutationBody = BodyType<CreateUserRequest>
-    export type CreateUserMutationError = ErrorType<BadRequestResponse | ForbiddenResponse>
+    export type CreateUserMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse>
     export type CreateUserMutationVariables = {data: BodyType<CreateUserRequest>}
 
     /**
  * @summary 创建用户
  */
-export const useCreateUser = <TError = ErrorType<BadRequestResponse | ForbiddenResponse>,
+export const useCreateUser = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError,CreateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createUser>>,
@@ -567,7 +570,7 @@ export const updateUser = (
 
 export const getUpdateUserMutationKey = () => ['updateUser'] as const;
 
-export const getUpdateUserMutationOptions = <TError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse>,
+export const getUpdateUserMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,UpdateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,UpdateUserMutationVariables, TContext> => {
 
@@ -596,13 +599,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateUser>>>
     export type UpdateUserMutationBody = BodyType<UpdateUserRequest>
-    export type UpdateUserMutationError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse>
+    export type UpdateUserMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>
     export type UpdateUserMutationVariables = {userId: string;data: BodyType<UpdateUserRequest>}
 
     /**
  * @summary 更新用户
  */
-export const useUpdateUser = <TError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse>,
+export const useUpdateUser = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,UpdateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateUser>>,
@@ -612,6 +615,194 @@ export const useUpdateUser = <TError = ErrorType<BadRequestResponse | ForbiddenR
       > => {
       return useMutation(getUpdateUserMutationOptions(options), queryClient);
     }
+
+/**
+ * 需要 users:write authority；active=false 的角色仅用于展示已有分配。
+ * @summary 获取可分配角色目录
+ */
+export const listRoleOptions = (
+
+ options?: SecondParameter<typeof request>,signal?: AbortSignal
+) => {
+
+
+      return request<RoleOption[]>(
+      {url: `/api/role-options`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListRoleOptionsQueryKey = () => {
+    return [
+    `/api/role-options`
+    ] as const;
+    }
+
+
+export const getListRoleOptionsQueryOptions = <TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRoleOptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRoleOptions>>> = ({ signal }) => listRoleOptions(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListRoleOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof listRoleOptions>>>
+export type ListRoleOptionsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse>
+
+
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listRoleOptions>>,
+          TError,
+          Awaited<ReturnType<typeof listRoleOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listRoleOptions>>,
+          TError,
+          Awaited<ReturnType<typeof listRoleOptions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取可分配角色目录
+ */
+
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListRoleOptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+/**
+ * 需要 roles:read authority；通配权限 * 返回为不可分配系统项。
+ * @summary 获取权限目录
+ */
+export const listPermissions = (
+
+ options?: SecondParameter<typeof request>,signal?: AbortSignal
+) => {
+
+
+      return request<PermissionOption[]>(
+      {url: `/api/permissions`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListPermissionsQueryKey = () => {
+    return [
+    `/api/permissions`
+    ] as const;
+    }
+
+
+export const getListPermissionsQueryOptions = <TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPermissionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPermissions>>> = ({ signal }) => listPermissions(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPermissionsQueryResult = NonNullable<Awaited<ReturnType<typeof listPermissions>>>
+export type ListPermissionsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse>
+
+
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPermissions>>,
+          TError,
+          Awaited<ReturnType<typeof listPermissions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPermissions>>,
+          TError,
+          Awaited<ReturnType<typeof listPermissions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary 获取权限目录
+ */
+
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPermissionsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 /**
  * @summary 查询角色和权限
@@ -710,7 +901,7 @@ export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TErr
  * @summary 更新角色权限和数据范围
  */
 export const updateRole = (
-    roleCode: string,
+    roleCode: RoleCode,
     updateRoleRequest: BodyType<UpdateRoleRequest>,
  options?: SecondParameter<typeof request>,signal?: AbortSignal
 ) => {
@@ -729,7 +920,7 @@ export const updateRole = (
 
 export const getUpdateRoleMutationKey = () => ['updateRole'] as const;
 
-export const getUpdateRoleMutationOptions = <TError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse>,
+export const getUpdateRoleMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,UpdateRoleMutationVariables, TContext>, request?: SecondParameter<typeof request>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,UpdateRoleMutationVariables, TContext> => {
 
@@ -758,13 +949,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateRoleMutationResult = NonNullable<Awaited<ReturnType<typeof updateRole>>>
     export type UpdateRoleMutationBody = BodyType<UpdateRoleRequest>
-    export type UpdateRoleMutationError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse>
-    export type UpdateRoleMutationVariables = {roleCode: string;data: BodyType<UpdateRoleRequest>}
+    export type UpdateRoleMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>
+    export type UpdateRoleMutationVariables = {roleCode: RoleCode;data: BodyType<UpdateRoleRequest>}
 
     /**
  * @summary 更新角色权限和数据范围
  */
-export const useUpdateRole = <TError = ErrorType<BadRequestResponse | ForbiddenResponse | NotFoundResponse>,
+export const useUpdateRole = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,UpdateRoleMutationVariables, TContext>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateRole>>,

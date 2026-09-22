@@ -5,6 +5,7 @@
  * Spring Boot 管理后台示例契约，建议由 springdoc-openapi 的 /v3/api-docs 替换。
  * OpenAPI spec version: 0.1.0
  */
+import type { RoleCode } from './roleCode';
 import type { UserStatus } from './userStatus';
 
 export interface User {
@@ -14,6 +15,6 @@ export interface User {
   department: string;
   status: UserStatus;
   /** @minItems 1 */
-  roles: string[];
+  roleCodes: RoleCode[];
   lastActiveAt: string;
 }

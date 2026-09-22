@@ -181,3 +181,87 @@ test('edits and persists a role permission', async ({ page }) => {
   await page.reload()
   await expect(page.locator('.arco-table-tr').filter({ hasText: '运营人员' }).getByRole('checkbox', { name: '查看审计日志' })).toBeChecked()
 })
+
+test('uses role codes from the role directory when editing a user', async ({ page }) => {
+  const updatePayloads: unknown[] = []
+  page.on('request', (request) => {
+    if (request.method() === 'PATCH' && request.url().includes('/api/users/'))
+      updatePayloads.push(request.postDataJSON())
+  })
+
+  await login(page)
+  await page.getByText('系统管理', { exact: true }).click()
+  await page.getByText('用户管理', { exact: true }).click()
+  await expect(page).toHaveURL(/users/)
+  await expect(page.getByText('财务人员（已停用）', { exact: true })).toBeVisible()
+
+  const operatorRow = page.locator('.arco-table-tr').filter({ hasText: '周明' })
+  await operatorRow.getByRole('button', { name: '编辑' }).click()
+  await expect(page.locator('.arco-modal').getByText('运营人员', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '保存' }).last().click()
+  await expect(page.getByText('用户信息已更新', { exact: true })).toBeVisible()
+
+  expect(updatePayloads).toHaveLength(1)
+  expect(updatePayloads[0]).toMatchObject({ roleCodes: ['operator'] })
+  expect(updatePayloads[0]).not.toHaveProperty('roles')
+})
+
+test('preserves an existing unknown role code when editing a user', async ({ page }) => {
+  const updatePayloads: Array<{ roleCodes?: string[] }> = []
+  page.on('request', (request) => {
+    if (request.method() === 'PATCH' && request.url().endsWith('/api/users/00000000-0000-4000-8000-000000000112'))
+      updatePayloads.push(request.postDataJSON())
+  })
+
+  await login(page)
+  await page.goto('/users')
+  await page.getByLabel('关键词').fill('唐川')
+  await page.getByRole('button', { name: '查询' }).click()
+
+  const userRow = page.locator('.arco-table-tr').filter({ hasText: '唐川' })
+  await userRow.getByRole('button', { name: '编辑' }).click()
+  await expect(page.locator('.arco-modal').getByText('未知角色（legacy-manager）', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '保存' }).last().click()
+  await expect(page.getByText('用户信息已更新', { exact: true })).toBeVisible()
+
+  expect(updatePayloads).toHaveLength(1)
+  expect(updatePayloads[0].roleCodes).toEqual(['auditor', 'legacy-manager'])
+})
+
+test('preserves unknown permissions and keeps wildcard permissions read-only', async ({ page }) => {
+  const updatePayloads: Array<{ permissions?: string[] }> = []
+  page.on('request', (request) => {
+    if (request.method() === 'PATCH' && request.url().endsWith('/api/roles/auditor'))
+      updatePayloads.push(request.postDataJSON())
+  })
+
+  await login(page)
+  await page.goto('/roles')
+
+  const adminRow = page.locator('.arco-table-tr').filter({ hasText: '系统管理员' })
+  await expect(adminRow.getByRole('checkbox', { name: '全部权限' })).toBeDisabled()
+
+  const auditorRow = page.locator('.arco-table-tr').filter({ hasText: '审计员' })
+  await expect(auditorRow.getByText('legacy:read', { exact: true })).toBeVisible()
+  await auditorRow.getByText('查看用户', { exact: true }).click()
+  await auditorRow.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('角色权限已保存', { exact: true })).toBeVisible()
+
+  expect(updatePayloads).toHaveLength(1)
+  expect(updatePayloads[0].permissions).toContain('legacy:read')
+  expect(updatePayloads[0].permissions).toContain('users:read')
+})
+
+test('keeps role management read-only without roles write permission', async ({ page }) => {
+  await login(page)
+  await page.evaluate(() => {
+    document.cookie = 'arco_mock_role=role-reader; Path=/; SameSite=Lax'
+  })
+  await page.goto('/roles')
+
+  await expect(page.getByRole('heading', { name: '角色与权限' })).toBeVisible()
+  const operatorRow = page.locator('.arco-table-tr').filter({ hasText: '运营人员' })
+  await expect(operatorRow.getByRole('checkbox', { name: '查看用户' })).toBeDisabled()
+  await expect(operatorRow.getByText('只读', { exact: true })).toBeVisible()
+  await expect(operatorRow.getByRole('button', { name: '保存' })).toHaveCount(0)
+})

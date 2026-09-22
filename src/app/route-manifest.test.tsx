@@ -22,7 +22,7 @@ function user(permissions: string[]): CurrentUser {
     email: 'test@example.com',
     avatarUrl: null,
     permissions,
-    roles: ['custom'],
+    roleCodes: ['custom'],
     dataScope: 'department',
   }
 }

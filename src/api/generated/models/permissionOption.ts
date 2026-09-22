@@ -5,13 +5,11 @@
  * Spring Boot 管理后台示例契约，建议由 springdoc-openapi 的 /v3/api-docs 替换。
  * OpenAPI spec version: 0.1.0
  */
-import type { DataScope } from './dataScope';
 import type { PermissionCode } from './permissionCode';
-import type { RoleCode } from './roleCode';
 
-export interface RoleSummary {
-  code: RoleCode;
+export interface PermissionOption {
+  code: PermissionCode;
   name: string;
-  dataScope: DataScope;
-  permissions: PermissionCode[];
+  group: string;
+  assignable: boolean;
 }

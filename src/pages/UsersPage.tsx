@@ -1,5 +1,6 @@
 import type {
   CreateUserRequest,
+  RoleOption,
   UpdateUserRequest,
   User,
   UserStatus,
@@ -26,6 +27,7 @@ import { useMemo, useState } from 'react'
 import {
   getListUsersQueryKey,
   useCreateUser,
+  useListRoleOptions,
   useListUsers,
   useUpdateUser,
 } from '@/api/generated/admin-api'
@@ -37,14 +39,19 @@ import { Permission } from '@/components/Permission'
 
 const { Title, Text } = Typography
 
-type UserFormValues = CreateUserRequest & UpdateUserRequest
+interface UserFormValues {
+  name?: CreateUserRequest['name']
+  email?: CreateUserRequest['email']
+  department?: CreateUserRequest['department']
+  status?: UpdateUserRequest['status']
+  roleCodes?: string[]
+}
 
-const roleOptions = [
-  { label: '管理员', value: '管理员' },
-  { label: '运营', value: '运营' },
-  { label: '财务', value: '财务' },
-  { label: '审计员', value: '审计员' },
-]
+function roleLabel(option: RoleOption | undefined, code: string): string {
+  if (!option)
+    return `未知角色（${code}）`
+  return option.active ? option.name : `${option.name}（已停用）`
+}
 
 const statusMeta: Record<UserStatus, { label: string, color: string }> = {
   active: { label: '正常', color: 'green' },
@@ -55,6 +62,7 @@ const statusMeta: Record<UserStatus, { label: string, color: string }> = {
 export function UsersPage() {
   const user = useAuth()
   const canRead = hasPermission(user, 'users:read')
+  const canEdit = hasPermission(user, PERMISSIONS.usersWrite)
   const [searchForm] = Form.useForm<{ keyword?: string, status?: UserStatus }>()
   const [userForm] = Form.useForm<UserFormValues>()
   const [page, setPage] = useState(1)
@@ -77,8 +85,41 @@ export function UsersPage() {
       enabled: canRead,
     },
   })
+  const roleOptionsQuery = useListRoleOptions({
+    query: {
+      enabled: canRead && canEdit,
+    },
+  })
   const createUser = useCreateUser()
   const updateUser = useUpdateUser()
+
+  const roleDirectory = useMemo(() => roleOptionsQuery.data ?? [], [roleOptionsQuery.data])
+  const roleDirectoryByCode = useMemo(
+    () => new Map(roleDirectory.map(option => [option.code, option] as const)),
+    [roleDirectory],
+  )
+  const formRoleOptions = useMemo(() => {
+    const selectedCodes = new Set(editingUser?.roleCodes ?? [])
+    const options = roleDirectory.map(option => ({
+      label: roleLabel(option, option.code),
+      value: option.code,
+      disabled: !option.active,
+    }))
+    for (const code of selectedCodes) {
+      if (!roleDirectoryByCode.has(code)) {
+        options.push({
+          label: roleLabel(undefined, code),
+          value: code,
+          disabled: true,
+        })
+      }
+    }
+    return options
+  }, [editingUser?.roleCodes, roleDirectory, roleDirectoryByCode])
+
+  const roleDirectoryReady = !roleOptionsQuery.isPending
+    && !roleOptionsQuery.isError
+    && roleDirectory.length > 0
 
   const openCreate = () => {
     setEditingUser(null)
@@ -93,12 +134,17 @@ export function UsersPage() {
       email: user.email,
       department: user.department,
       status: user.status,
-      roles: user.roles,
+      roleCodes: user.roleCodes,
     })
     setModalVisible(true)
   }
 
   const submitUser = async () => {
+    if (!roleDirectoryReady) {
+      Message.error(roleOptionsQuery.isError ? '角色目录加载失败，请稍后重试' : '暂无可分配角色')
+      return
+    }
+
     let values: UserFormValues
     try {
       values = await userForm.validate()
@@ -107,26 +153,35 @@ export function UsersPage() {
       return
     }
 
+    const name = values.name
+    const email = values.email
+    const department = values.department
+    const roleCodes = values.roleCodes ?? []
+    if (!name || !department || roleCodes.length === 0)
+      return
+
     try {
       if (editingUser) {
         await updateUser.mutateAsync({
           userId: editingUser.id,
           data: {
-            name: values.name,
-            department: values.department,
+            name,
+            department,
             status: values.status,
-            roles: values.roles,
+            roleCodes,
           },
         })
         Message.success('用户信息已更新')
       }
       else {
+        if (!email)
+          return
         await createUser.mutateAsync({
           data: {
-            name: values.name,
-            email: values.email,
-            department: values.department,
-            roles: values.roles,
+            name,
+            email,
+            department,
+            roleCodes,
           },
         })
         Message.success('用户已创建')
@@ -158,8 +213,14 @@ export function UsersPage() {
     { title: '部门', dataIndex: 'department', width: 150 },
     {
       title: '角色',
-      dataIndex: 'roles',
-      render: (roles: string[]) => <Space wrap>{roles.map(role => <Tag key={role} color="arcoblue" bordered={false}>{role}</Tag>)}</Space>,
+      dataIndex: 'roleCodes',
+      render: (roleCodes: string[]) => (
+        <Space wrap>
+          {roleCodes.map(code => (
+            <Tag key={code} color="arcoblue" bordered={false}>{roleLabel(roleDirectoryByCode.get(code), code)}</Tag>
+          ))}
+        </Space>
+      ),
     },
     {
       title: '状态',
@@ -289,11 +350,16 @@ export function UsersPage() {
         onCancel={() => setModalVisible(false)}
         onOk={submitUser}
         confirmLoading={createUser.isPending || updateUser.isPending}
+        okButtonProps={{ disabled: !roleDirectoryReady }}
         okText="保存"
         cancelText="取消"
-        unmountOnExit
+        mountOnEnter={false}
       >
-        <Form form={userForm} layout="vertical" initialValues={{ roles: [], status: 'active' }}>
+        <Form
+          form={userForm}
+          layout="vertical"
+          initialValues={{ roleCodes: editingUser?.roleCodes ?? [], status: editingUser?.status ?? 'active' }}
+        >
           <Form.Item field="name" label="姓名" rules={[{ required: true, message: '请输入姓名' }, { minLength: 2, message: '姓名至少 2 个字符' }]}>
             <Input prefix={<IconUserAdd />} placeholder="例如：林晓" />
           </Form.Item>
@@ -305,9 +371,17 @@ export function UsersPage() {
           <Form.Item field="department" label="部门" rules={[{ required: true, message: '请输入部门' }]}>
             <Input placeholder="例如：产品与运营部" />
           </Form.Item>
-          <Form.Item field="roles" label="角色" rules={[{ required: true, message: '至少选择一个角色' }]}>
-            <Select mode="multiple" options={roleOptions} placeholder="选择角色" />
+          <Form.Item field="roleCodes" label="角色" rules={[{ required: true, message: '至少选择一个角色' }]}>
+            <Select
+              mode="multiple"
+              loading={roleOptionsQuery.isPending}
+              disabled={!roleDirectoryReady}
+              options={formRoleOptions}
+              placeholder={roleOptionsQuery.isError ? '角色目录加载失败' : '选择角色'}
+            />
           </Form.Item>
+          {roleOptionsQuery.isError && <Text type="secondary">角色目录加载失败，请稍后重试。</Text>}
+          {!roleOptionsQuery.isPending && !roleOptionsQuery.isError && roleDirectory.length === 0 && <Text type="secondary">暂无可分配角色。</Text>}
           {editingUser && (
             <Form.Item field="status" label="状态">
               <Select options={Object.entries(statusMeta).map(([value, meta]) => ({ value, label: meta.label }))} />

@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DataScope } from './dataScope';
+import type { PermissionCode } from './permissionCode';
+import type { RoleCode } from './roleCode';
 
 export interface CurrentUser {
   id: string;
@@ -13,7 +15,7 @@ export interface CurrentUser {
   email: string;
   /** @nullable */
   avatarUrl?: string | null;
-  permissions: string[];
-  roles: string[];
+  permissions: PermissionCode[];
+  roleCodes: RoleCode[];
   dataScope: DataScope;
 }

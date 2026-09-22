@@ -5,10 +5,9 @@
  * Spring Boot 管理后台示例契约，建议由 springdoc-openapi 的 /v3/api-docs 替换。
  * OpenAPI spec version: 0.1.0
  */
-import type { DataScope } from './dataScope';
-import type { PermissionCode } from './permissionCode';
 
-export interface UpdateRoleRequest {
-  dataScope: DataScope;
-  permissions: PermissionCode[];
-}
+/**
+ * resource:action 格式的权限代码，* 仅为系统通配项。
+ * @pattern ^(\*|[a-z][a-z0-9-]*:[a-z][a-z0-9-]*)$
+ */
+export type PermissionCode = string;

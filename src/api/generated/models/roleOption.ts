@@ -7,18 +7,8 @@
  */
 import type { RoleCode } from './roleCode';
 
-export interface CreateUserRequest {
-  /**
-     * @minLength 2
-     * @maxLength 50
-     */
+export interface RoleOption {
+  code: RoleCode;
   name: string;
-  email: string;
-  /**
-     * @minLength 1
-     * @maxLength 50
-     */
-  department: string;
-  /** @minItems 1 */
-  roleCodes: RoleCode[];
+  active: boolean;
 }

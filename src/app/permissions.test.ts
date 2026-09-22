@@ -9,7 +9,7 @@ const user: CurrentUser = {
   displayName: '测试用户',
   email: 'test@example.com',
   permissions: ['dashboard:read', 'users:read'],
-  roles: ['operator'],
+  roleCodes: ['operator'],
   dataScope: 'department',
 }
 

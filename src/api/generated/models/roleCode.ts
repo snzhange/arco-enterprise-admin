@@ -5,10 +5,11 @@
  * Spring Boot 管理后台示例契约，建议由 springdoc-openapi 的 /v3/api-docs 替换。
  * OpenAPI spec version: 0.1.0
  */
-import type { DataScope } from './dataScope';
-import type { PermissionCode } from './permissionCode';
 
-export interface UpdateRoleRequest {
-  dataScope: DataScope;
-  permissions: PermissionCode[];
-}
+/**
+ * 创建后不可变的小写 kebab-case 角色代码。
+ * @minLength 1
+ * @maxLength 64
+ * @pattern ^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$
+ */
+export type RoleCode = string;

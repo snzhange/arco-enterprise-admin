@@ -1,15 +1,24 @@
 import type {
+  CreateUserRequest,
   CurrentUser,
   DashboardSummary,
   LoginRequest,
   RoleSummary,
   UpdateRoleRequest,
+  UpdateUserRequest,
   User,
   UserPage,
   UserStatus,
 } from '@/api/generated/models'
 
 import { http, HttpResponse } from 'msw'
+import {
+  cloneRoleSummaries,
+  cloneUsers,
+  MOCK_PERMISSION_OPTIONS,
+  MOCK_ROLE_OPTIONS,
+  MOCK_USERS,
+} from './rbac'
 
 const AUTH_COOKIE = 'arco_mock_session'
 
@@ -21,86 +30,30 @@ function hasSession(request?: Request): boolean {
   return typeof document !== 'undefined' && document.cookie.includes(`${AUTH_COOKIE}=1`)
 }
 
-const adminUser: CurrentUser = {
-  id: '00000000-0000-4000-8000-000000000001',
-  displayName: '林晓',
-  email: 'lin.xiao@arco.dev',
-  avatarUrl: null,
-  permissions: ['dashboard:read', 'visualization:read', 'list:read', 'form:read', 'profile:read', 'result:read', 'exception:read', 'user:read', 'users:read', 'users:write', 'roles:read', 'roles:write', 'audit:read'],
-  roles: ['admin'],
-  dataScope: 'all',
-}
-
-const operatorUser: CurrentUser = {
-  ...adminUser,
-  id: '00000000-0000-4000-8000-000000000002',
-  displayName: '运营用户',
-  email: 'operator@arco.dev',
-  permissions: ['dashboard:read', 'visualization:read', 'list:read', 'form:read', 'profile:read', 'result:read', 'exception:read', 'user:read', 'users:read'],
-  roles: ['operator'],
-  dataScope: 'department',
-}
-
-const listReaderUser: CurrentUser = {
-  ...adminUser,
-  id: '00000000-0000-4000-8000-000000000003',
-  displayName: '列表用户',
-  email: 'list-reader@arco.dev',
-  permissions: ['list:read'],
-  roles: ['list-reader'],
-  dataScope: 'self',
-}
-
-const userReaderUser: CurrentUser = {
-  ...adminUser,
-  id: '00000000-0000-4000-8000-000000000004',
-  displayName: '个人中心用户',
-  email: 'user-reader@arco.dev',
-  permissions: ['user:read'],
-  roles: ['user-reader'],
-  dataScope: 'self',
-}
-
-let currentUser: CurrentUser = adminUser
+let currentUser: CurrentUser = MOCK_USERS.admin
 
 function getCurrentUser(request?: Request): CurrentUser {
   const role = request?.headers.get('X-Mock-Role') || request?.headers.get('cookie')?.match(/arco_mock_role=([^;]+)/)?.[1]
-  if (role === 'operator')
-    return operatorUser
-  if (role === 'list-reader')
-    return listReaderUser
-  if (role === 'user-reader')
-    return userReaderUser
-  return currentUser
+  return (role && MOCK_USERS[role]) || currentUser
 }
-
-const defaultRoles: RoleSummary[] = [
-  { code: 'admin', name: '系统管理员', dataScope: 'all', permissions: ['*'] },
-  { code: 'operator', name: '运营人员', dataScope: 'department', permissions: ['dashboard:read', 'users:read'] },
-  { code: 'auditor', name: '审计员', dataScope: 'all', permissions: ['dashboard:read', 'audit:read'] },
-]
 
 const ROLE_STORAGE_KEY = 'arco_mock_roles'
 
-function cloneRoles(source: RoleSummary[]): RoleSummary[] {
-  return source.map(role => ({ ...role, permissions: [...role.permissions] }))
-}
-
 function readPersistedRoles(): RoleSummary[] {
   if (typeof sessionStorage === 'undefined')
-    return cloneRoles(defaultRoles)
+    return cloneRoleSummaries()
 
   try {
     const value = sessionStorage.getItem(ROLE_STORAGE_KEY)
     if (!value)
-      return cloneRoles(defaultRoles)
+      return cloneRoleSummaries()
     const parsed = JSON.parse(value) as unknown
     if (!Array.isArray(parsed) || parsed.some(role => !role || typeof role !== 'object'))
-      return cloneRoles(defaultRoles)
+      return cloneRoleSummaries()
     return parsed as RoleSummary[]
   }
   catch {
-    return cloneRoles(defaultRoles)
+    return cloneRoleSummaries()
   }
 }
 
@@ -117,30 +70,7 @@ function persistRoles(value: RoleSummary[]): void {
 
 const roles: RoleSummary[] = readPersistedRoles()
 
-const initialUsers: Array<[string, string, string, string, UserStatus, string[], string]> = [
-  ['00000000-0000-4000-8000-000000000101', '林晓', 'lin.xiao@arco.dev', '产品与运营部', 'active', ['管理员'], '2026-09-06T09:42:00+08:00'],
-  ['00000000-0000-4000-8000-000000000102', '周明', 'zhou.ming@arco.dev', '技术平台部', 'active', ['运营'], '2026-09-06T09:21:00+08:00'],
-  ['00000000-0000-4000-8000-000000000103', '陈思远', 'chen.siyuan@arco.dev', '财务部', 'invited', ['财务'], '2026-09-05T18:30:00+08:00'],
-  ['00000000-0000-4000-8000-000000000104', '王璐', 'wang.lu@arco.dev', '客户成功部', 'active', ['运营', '审计员'], '2026-09-05T16:12:00+08:00'],
-  ['00000000-0000-4000-8000-000000000105', '赵启航', 'zhao.qihang@arco.dev', '技术平台部', 'active', ['运营'], '2026-09-05T14:48:00+08:00'],
-  ['00000000-0000-4000-8000-000000000106', '苏婉', 'su.wan@arco.dev', '人力资源部', 'disabled', ['审计员'], '2026-09-04T11:03:00+08:00'],
-  ['00000000-0000-4000-8000-000000000107', '何宇', 'he.yu@arco.dev', '市场部', 'active', ['运营'], '2026-09-04T10:36:00+08:00'],
-  ['00000000-0000-4000-8000-000000000108', '李安然', 'li.anran@arco.dev', '产品与运营部', 'active', ['运营'], '2026-09-03T19:20:00+08:00'],
-  ['00000000-0000-4000-8000-000000000109', '高远', 'gao.yuan@arco.dev', '技术平台部', 'invited', ['审计员'], '2026-09-03T15:02:00+08:00'],
-  ['00000000-0000-4000-8000-000000000110', '许诺', 'xu.nuo@arco.dev', '客户成功部', 'active', ['运营'], '2026-09-02T13:25:00+08:00'],
-  ['00000000-0000-4000-8000-000000000111', '谢雨晴', 'xie.yuqing@arco.dev', '市场部', 'active', ['运营'], '2026-09-02T09:14:00+08:00'],
-  ['00000000-0000-4000-8000-000000000112', '唐川', 'tang.chuan@arco.dev', '技术平台部', 'active', ['审计员'], '2026-09-01T17:42:00+08:00'],
-]
-
-let users: User[] = initialUsers.map(([id, name, email, department, status, roles, lastActiveAt]) => ({
-  id,
-  name,
-  email,
-  department,
-  status: status as UserStatus,
-  roles,
-  lastActiveAt,
-}))
+let users: User[] = cloneUsers()
 
 const dashboard: DashboardSummary = {
   activeUsers: 1284,
@@ -177,33 +107,73 @@ function hasPermission(request: Request, permission: string): boolean {
   return user.permissions.includes('*') || user.permissions.includes(permission)
 }
 
+function badRequest(detail: string) {
+  return HttpResponse.json({ title: 'Bad Request', status: 400, detail }, { status: 400 })
+}
+
+function isValidRoleCodes(roleCodes: unknown, existingUser?: User): roleCodes is string[] {
+  if (!Array.isArray(roleCodes) || roleCodes.length === 0 || roleCodes.some(code => typeof code !== 'string'))
+    return false
+  if (new Set(roleCodes).size !== roleCodes.length)
+    return false
+  return roleCodes.every((code) => {
+    if (existingUser?.roleCodes.includes(code))
+      return true
+    const option = MOCK_ROLE_OPTIONS.find(item => item.code === code)
+    return Boolean(option?.active)
+  })
+}
+
+function isValidRolePermissions(role: RoleSummary, permissions: unknown): permissions is string[] {
+  if (!Array.isArray(permissions) || permissions.some(permission => typeof permission !== 'string'))
+    return false
+  if (new Set(permissions).size !== permissions.length)
+    return false
+  const hasWildcard = permissions.includes('*')
+  if (hasWildcard)
+    return role.code === 'admin' && permissions.length === 1
+  return permissions.every((permission) => {
+    if (role.permissions.includes(permission))
+      return true
+    return MOCK_PERMISSION_OPTIONS.some(option => option.code === permission && option.assignable)
+  })
+}
+
+function cloneRoleOptions() {
+  return MOCK_ROLE_OPTIONS.map(option => ({ ...option }))
+}
+
+function clonePermissionOptions() {
+  return MOCK_PERMISSION_OPTIONS.map(option => ({ ...option }))
+}
+
 export const handlers = [
-  http.get('/api/auth/session', ({ request }) => hasSession(request) ? HttpResponse.json(getCurrentUser(request)) : unauthorized()),
-  http.post('/api/auth/login', async ({ request }) => {
+  http.get('*/api/auth/session', ({ request }) => hasSession(request) ? HttpResponse.json(getCurrentUser(request)) : unauthorized()),
+  http.post('*/api/auth/login', async ({ request }) => {
     const body = await request.json() as LoginRequest
     if (body.email === 'admin@arco.dev' && body.password === 'admin1234') {
-      currentUser = adminUser
+      currentUser = MOCK_USERS.admin
       return new HttpResponse(null, {
         status: 204,
         headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
       })
     }
     if (body.email === 'operator@arco.dev' && body.password === 'operator1234') {
-      currentUser = operatorUser
+      currentUser = MOCK_USERS.operator
       return new HttpResponse(null, {
         status: 204,
         headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
       })
     }
     if (body.email === 'list-reader@arco.dev' && body.password === 'listreader1234') {
-      currentUser = listReaderUser
+      currentUser = MOCK_USERS['list-reader']
       return new HttpResponse(null, {
         status: 204,
         headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
       })
     }
     if (body.email === 'user-reader@arco.dev' && body.password === 'userreader1234') {
-      currentUser = userReaderUser
+      currentUser = MOCK_USERS['user-reader']
       return new HttpResponse(null, {
         status: 204,
         headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
@@ -211,15 +181,29 @@ export const handlers = [
     }
     return HttpResponse.json({ title: 'Unauthorized', status: 401, detail: '邮箱或密码错误' }, { status: 401 })
   }),
-  http.post('/api/auth/logout', () => {
-    currentUser = adminUser
+  http.post('*/api/auth/logout', () => {
+    currentUser = MOCK_USERS.admin
     return new HttpResponse(null, {
       status: 204,
       headers: { 'Set-Cookie': `${AUTH_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax` },
     })
   }),
-  http.get('/api/dashboard/summary', ({ request }) => hasSession(request) ? HttpResponse.json(dashboard) : unauthorized()),
-  http.get('/api/users', ({ request }) => {
+  http.get('*/api/dashboard/summary', ({ request }) => hasSession(request) ? HttpResponse.json(dashboard) : unauthorized()),
+  http.get('*/api/role-options', ({ request }) => {
+    if (!hasSession(request))
+      return unauthorized()
+    if (!hasPermission(request, 'users:write'))
+      return forbidden()
+    return HttpResponse.json(cloneRoleOptions())
+  }),
+  http.get('*/api/permissions', ({ request }) => {
+    if (!hasSession(request))
+      return unauthorized()
+    if (!hasPermission(request, 'roles:read'))
+      return forbidden()
+    return HttpResponse.json(clonePermissionOptions())
+  }),
+  http.get('*/api/users', ({ request }) => {
     if (!hasSession(request))
       return unauthorized()
     if (!hasPermission(request, 'users:read'))
@@ -243,12 +227,14 @@ export const handlers = [
     }
     return HttpResponse.json(response)
   }),
-  http.post('/api/users', async ({ request }) => {
+  http.post('*/api/users', async ({ request }) => {
     if (!hasSession(request))
       return unauthorized()
     if (!hasPermission(request, 'users:write'))
       return forbidden()
-    const body = await request.json() as { name: string, email: string, department: string, roles: string[] }
+    const body = await request.json() as CreateUserRequest
+    if (!isValidRoleCodes(body.roleCodes))
+      return badRequest('roleCodes 包含未知、重复或不可分配的角色代码')
     const user: User = {
       id: crypto.randomUUID(),
       ...body,
@@ -258,7 +244,7 @@ export const handlers = [
     users = [user, ...users]
     return HttpResponse.json(user, { status: 201 })
   }),
-  http.patch('/api/users/:userId', async ({ params, request }) => {
+  http.patch('*/api/users/:userId', async ({ params, request }) => {
     if (!hasSession(request))
       return unauthorized()
     if (!hasPermission(request, 'users:write'))
@@ -266,18 +252,20 @@ export const handlers = [
     const index = users.findIndex(user => user.id === params.userId)
     if (index < 0)
       return HttpResponse.json({ title: 'Not Found', status: 404 }, { status: 404 })
-    const body = await request.json() as Partial<User>
-    users[index] = { ...users[index], ...body }
+    const body = await request.json() as UpdateUserRequest
+    if (body.roleCodes !== undefined && !isValidRoleCodes(body.roleCodes, users[index]))
+      return badRequest('roleCodes 包含未知、重复或不可分配的角色代码')
+    users[index] = { ...users[index], ...body, roleCodes: body.roleCodes ?? users[index].roleCodes }
     return HttpResponse.json(users[index])
   }),
-  http.get('/api/roles', ({ request }) => {
+  http.get('*/api/roles', ({ request }) => {
     if (!hasSession(request))
       return unauthorized()
     if (!hasPermission(request, 'roles:read'))
       return forbidden()
     return HttpResponse.json(roles)
   }),
-  http.patch('/api/roles/:roleCode', async ({ params, request }) => {
+  http.patch('*/api/roles/:roleCode', async ({ params, request }) => {
     if (!hasSession(request))
       return unauthorized()
     if (!hasPermission(request, 'roles:write'))
@@ -287,6 +275,8 @@ export const handlers = [
     if (index < 0)
       return HttpResponse.json({ title: 'Not Found', status: 404 }, { status: 404 })
     const body = await request.json() as UpdateRoleRequest
+    if (!isValidRolePermissions(roles[index], body.permissions))
+      return badRequest('permissions 包含重复权限或不可分配的通配权限')
     roles[index] = { ...roles[index], ...body }
     persistRoles(roles)
     return HttpResponse.json(roles[index])

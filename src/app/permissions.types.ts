@@ -1,13 +1,14 @@
-export type Permission = '*' | `${string}:${string}`
+import type {
+  DataScope as ApiDataScope,
+  RoleSummary as ApiRoleSummary,
+  PermissionCode,
+} from '@/api/generated/models'
 
-export type DataScope = 'all' | 'department' | 'self'
+export type Permission = PermissionCode
 
-export interface RoleSummary {
-  code: string
-  dataScope: DataScope
-  name: string
-  permissions: Permission[]
-}
+export type DataScope = ApiDataScope
+
+export type RoleSummary = ApiRoleSummary
 
 export interface PermissionRequirement {
   all?: Permission[]
