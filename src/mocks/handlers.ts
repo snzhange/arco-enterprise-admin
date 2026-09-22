@@ -37,6 +37,12 @@ function getCurrentUser(request?: Request): CurrentUser {
   return (role && MOCK_USERS[role]) || currentUser
 }
 
+function getMockFailure(request: Request): string | null {
+  return request.headers.get('X-Mock-Failure')
+    || request.headers.get('cookie')?.match(/arco_mock_failure=([^;]+)/)?.[1]
+    || null
+}
+
 const ROLE_STORAGE_KEY = 'arco_mock_roles'
 
 function readPersistedRoles(): RoleSummary[] {
@@ -94,12 +100,19 @@ const dashboard: DashboardSummary = {
   ],
 }
 
+function problemResponse(payload: Record<string, unknown>, status: number) {
+  return HttpResponse.json(payload, {
+    status,
+    headers: { 'Content-Type': 'application/problem+json' },
+  })
+}
+
 function unauthorized() {
-  return HttpResponse.json({ title: 'Unauthorized', status: 401, detail: '登录已过期' }, { status: 401 })
+  return problemResponse({ title: 'Unauthorized', status: 401, detail: '登录已过期', code: 'SESSION_EXPIRED' }, 401)
 }
 
 function forbidden() {
-  return HttpResponse.json({ title: 'Forbidden', status: 403, detail: '没有操作权限' }, { status: 403 })
+  return problemResponse({ title: 'Forbidden', status: 403, detail: '没有操作权限', code: 'FORBIDDEN' }, 403)
 }
 
 function hasPermission(request: Request, permission: string): boolean {
@@ -107,8 +120,8 @@ function hasPermission(request: Request, permission: string): boolean {
   return user.permissions.includes('*') || user.permissions.includes(permission)
 }
 
-function badRequest(detail: string) {
-  return HttpResponse.json({ title: 'Bad Request', status: 400, detail }, { status: 400 })
+function badRequest(detail: string, fieldErrors?: Array<{ field: string, message: string }>) {
+  return problemResponse({ title: 'Bad Request', status: 400, detail, fieldErrors }, 400)
 }
 
 function isValidRoleCodes(roleCodes: unknown, existingUser?: User): roleCodes is string[] {
@@ -148,7 +161,17 @@ function clonePermissionOptions() {
 }
 
 export const handlers = [
-  http.get('*/api/auth/session', ({ request }) => hasSession(request) ? HttpResponse.json(getCurrentUser(request)) : unauthorized()),
+  http.get('*/api/auth/session', ({ request }) => {
+    if (getMockFailure(request) === 'session-500') {
+      return problemResponse({
+        title: '服务暂时不可用',
+        status: 500,
+        detail: '会话服务暂时不可用',
+        traceId: 'session-500',
+      }, 500)
+    }
+    return hasSession(request) ? HttpResponse.json(getCurrentUser(request)) : unauthorized()
+  }),
   http.post('*/api/auth/login', async ({ request }) => {
     const body = await request.json() as LoginRequest
     if (body.email === 'admin@arco.dev' && body.password === 'admin1234') {
@@ -179,7 +202,7 @@ export const handlers = [
         headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
       })
     }
-    return HttpResponse.json({ title: 'Unauthorized', status: 401, detail: '邮箱或密码错误' }, { status: 401 })
+    return problemResponse({ title: 'Unauthorized', status: 401, detail: '邮箱或密码错误', code: 'INVALID_CREDENTIALS' }, 401)
   }),
   http.post('*/api/auth/logout', () => {
     currentUser = MOCK_USERS.admin
@@ -188,7 +211,13 @@ export const handlers = [
       headers: { 'Set-Cookie': `${AUTH_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax` },
     })
   }),
-  http.get('*/api/dashboard/summary', ({ request }) => hasSession(request) ? HttpResponse.json(dashboard) : unauthorized()),
+  http.get('*/api/dashboard/summary', ({ request }) => {
+    if (getMockFailure(request) === 'business-401')
+      return unauthorized()
+    if (getMockFailure(request) === 'network')
+      return HttpResponse.error()
+    return hasSession(request) ? HttpResponse.json(dashboard) : unauthorized()
+  }),
   http.get('*/api/role-options', ({ request }) => {
     if (!hasSession(request))
       return unauthorized()
@@ -232,9 +261,11 @@ export const handlers = [
       return unauthorized()
     if (!hasPermission(request, 'users:write'))
       return forbidden()
+    if (getMockFailure(request) === 'user-field-error')
+      return badRequest('请检查用户信息', [{ field: 'roleCodes', message: '请选择有效的角色代码' }])
     const body = await request.json() as CreateUserRequest
     if (!isValidRoleCodes(body.roleCodes))
-      return badRequest('roleCodes 包含未知、重复或不可分配的角色代码')
+      return badRequest('roleCodes 包含未知、重复或不可分配的角色代码', [{ field: 'roleCodes', message: '请选择有效的角色代码' }])
     const user: User = {
       id: crypto.randomUUID(),
       ...body,
@@ -249,12 +280,14 @@ export const handlers = [
       return unauthorized()
     if (!hasPermission(request, 'users:write'))
       return forbidden()
+    if (getMockFailure(request) === 'user-field-error')
+      return badRequest('请检查用户信息', [{ field: 'roleCodes', message: '请选择有效的角色代码' }])
     const index = users.findIndex(user => user.id === params.userId)
     if (index < 0)
-      return HttpResponse.json({ title: 'Not Found', status: 404 }, { status: 404 })
+      return problemResponse({ title: 'Not Found', status: 404, detail: '用户不存在' }, 404)
     const body = await request.json() as UpdateUserRequest
     if (body.roleCodes !== undefined && !isValidRoleCodes(body.roleCodes, users[index]))
-      return badRequest('roleCodes 包含未知、重复或不可分配的角色代码')
+      return badRequest('roleCodes 包含未知、重复或不可分配的角色代码', [{ field: 'roleCodes', message: '请选择有效的角色代码' }])
     users[index] = { ...users[index], ...body, roleCodes: body.roleCodes ?? users[index].roleCodes }
     return HttpResponse.json(users[index])
   }),
@@ -268,15 +301,15 @@ export const handlers = [
   http.patch('*/api/roles/:roleCode', async ({ params, request }) => {
     if (!hasSession(request))
       return unauthorized()
-    if (!hasPermission(request, 'roles:write'))
+    if (getMockFailure(request) === 'role-403' || !hasPermission(request, 'roles:write'))
       return forbidden()
     const roleCode = String(params.roleCode)
     const index = roles.findIndex(role => role.code === roleCode)
     if (index < 0)
-      return HttpResponse.json({ title: 'Not Found', status: 404 }, { status: 404 })
+      return problemResponse({ title: 'Not Found', status: 404, detail: '角色不存在' }, 404)
     const body = await request.json() as UpdateRoleRequest
     if (!isValidRolePermissions(roles[index], body.permissions))
-      return badRequest('permissions 包含重复权限或不可分配的通配权限')
+      return badRequest('permissions 包含重复权限或不可分配的通配权限', [{ field: 'permissions', message: '权限组合无效' }])
     roles[index] = { ...roles[index], ...body }
     persistRoles(roles)
     return HttpResponse.json(roles[index])

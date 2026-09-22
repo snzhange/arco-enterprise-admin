@@ -24,6 +24,7 @@ import { IconPlus, IconRefresh, IconSearch, IconUserAdd } from '@arco-design/web
 import { useQueryClient } from '@tanstack/react-query'
 
 import { useMemo, useState } from 'react'
+import { applyFieldErrors, getErrorMessage, getTraceMessage, isCancelledError, toApiError } from '@/api/errors'
 import {
   getListUsersQueryKey,
   useCreateUser,
@@ -31,7 +32,6 @@ import {
   useListUsers,
   useUpdateUser,
 } from '@/api/generated/admin-api'
-import { getErrorMessage } from '@/api/http'
 import { useAuth } from '@/app/auth'
 import { hasPermission } from '@/app/permissions'
 import { PERMISSIONS } from '@/app/permissions.constants'
@@ -71,6 +71,7 @@ export function UsersPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
+  const [formErrorMessage, setFormErrorMessage] = useState('')
 
   const queryClient = useQueryClient()
   const params = useMemo(() => ({
@@ -123,12 +124,14 @@ export function UsersPage() {
 
   const openCreate = () => {
     setEditingUser(null)
+    setFormErrorMessage('')
     userForm.resetFields()
     setModalVisible(true)
   }
 
   const openEdit = (user: User) => {
     setEditingUser(user)
+    setFormErrorMessage('')
     userForm.setFieldsValue({
       name: user.name,
       email: user.email,
@@ -190,7 +193,13 @@ export function UsersPage() {
       setModalVisible(false)
     }
     catch (error) {
-      Message.error(getErrorMessage(error))
+      const apiError = toApiError(error)
+      if (apiError.kind === 'unauthenticated' || isCancelledError(apiError))
+        return
+      const detail = applyFieldErrors(userForm, error)
+      setFormErrorMessage(detail || getErrorMessage(error))
+      if (!detail)
+        Message.error(getErrorMessage(error))
     }
   }
 
@@ -329,6 +338,13 @@ export function UsersPage() {
           }}
           pagination={false}
         />
+        {usersQuery.isError && (
+          <div className="page-error" role="alert">
+            <Text>{getErrorMessage(usersQuery.error)}</Text>
+            {getTraceMessage(usersQuery.error) && <Text type="secondary">{getTraceMessage(usersQuery.error)}</Text>}
+            <Button type="primary" onClick={() => void usersQuery.refetch()}>重试</Button>
+          </div>
+        )}
         <div className="table-pagination">
           <Pagination
             current={page}
@@ -360,6 +376,7 @@ export function UsersPage() {
           layout="vertical"
           initialValues={{ roleCodes: editingUser?.roleCodes ?? [], status: editingUser?.status ?? 'active' }}
         >
+          {formErrorMessage && <div className="form-error" role="alert">{formErrorMessage}</div>}
           <Form.Item field="name" label="姓名" rules={[{ required: true, message: '请输入姓名' }, { minLength: 2, message: '姓名至少 2 个字符' }]}>
             <Input prefix={<IconUserAdd />} placeholder="例如：林晓" />
           </Form.Item>

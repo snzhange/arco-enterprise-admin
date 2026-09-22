@@ -30,6 +30,7 @@ import type {
   CurrentUser,
   DashboardSummary,
   ForbiddenResponse,
+  InternalServerErrorResponse,
   ListUsersParams,
   LoginRequest,
   NotFoundResponse,
@@ -37,6 +38,7 @@ import type {
   RoleCode,
   RoleOption,
   RoleSummary,
+  ServiceUnavailableResponse,
   UnauthorizedResponse,
   UpdateRoleRequest,
   UpdateUserRequest,
@@ -90,7 +92,7 @@ export const getGetCurrentUserQueryKey = () => {
     }
 
 
-export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>>, request?: SecondParameter<typeof request>}
+export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>>, request?: SecondParameter<typeof request>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -109,10 +111,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetCurrentUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>
-export type GetCurrentUserQueryError = ErrorType<UnauthorizedResponse>
+export type GetCurrentUserQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
 
-export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getCurrentUser>>,
@@ -122,7 +124,7 @@ export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUs
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getCurrentUser>>,
@@ -132,7 +134,7 @@ export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUs
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -140,7 +142,7 @@ export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUs
  * @summary 获取当前登录用户
  */
 
-export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -180,7 +182,7 @@ export const login = (
 
 export const getLoginMutationKey = () => ['login'] as const;
 
-export const getLoginMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+export const getLoginMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext>, request?: SecondParameter<typeof request>}
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext> => {
 
@@ -209,13 +211,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
     export type LoginMutationBody = BodyType<LoginRequest>
-    export type LoginMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type LoginMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
     export type LoginMutationVariables = {data: BodyType<LoginRequest>}
 
     /**
  * @summary 登录
  */
-export const useLogin = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+export const useLogin = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof login>>,
@@ -317,7 +319,7 @@ export const getGetDashboardSummaryQueryKey = () => {
     }
 
 
-export const getGetDashboardSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>>, request?: SecondParameter<typeof request>}
+export const getGetDashboardSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>>, request?: SecondParameter<typeof request>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -336,10 +338,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetDashboardSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardSummary>>>
-export type GetDashboardSummaryQueryError = ErrorType<UnauthorizedResponse>
+export type GetDashboardSummaryQueryError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
 
-export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getDashboardSummary>>,
@@ -349,7 +351,7 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getDashboardSummary>>,
@@ -359,7 +361,7 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -367,7 +369,7 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
  * @summary 获取仪表盘摘要
  */
 
-export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse>>(
+export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<UnauthorizedResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -411,7 +413,7 @@ export const getListUsersQueryKey = (params?: ListUsersParams,) => {
     }
 
 
-export const getListUsersQueryOptions = <TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
+export const getListUsersQueryOptions = <TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -430,10 +432,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listUsers>>>
-export type ListUsersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse>
+export type ListUsersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
 
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params: undefined |  ListUsersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listUsers>>,
@@ -443,7 +445,7 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listUsers>>,
@@ -453,7 +455,7 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -461,7 +463,7 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
  * @summary 分页查询用户
  */
 
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -501,7 +503,7 @@ export const createUser = (
 
 export const getCreateUserMutationKey = () => ['createUser'] as const;
 
-export const getCreateUserMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse>,
+export const getCreateUserMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError,CreateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError,CreateUserMutationVariables, TContext> => {
 
@@ -530,13 +532,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateUserMutationResult = NonNullable<Awaited<ReturnType<typeof createUser>>>
     export type CreateUserMutationBody = BodyType<CreateUserRequest>
-    export type CreateUserMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse>
+    export type CreateUserMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
     export type CreateUserMutationVariables = {data: BodyType<CreateUserRequest>}
 
     /**
  * @summary 创建用户
  */
-export const useCreateUser = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse>,
+export const useCreateUser = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUser>>, TError,CreateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createUser>>,
@@ -570,7 +572,7 @@ export const updateUser = (
 
 export const getUpdateUserMutationKey = () => ['updateUser'] as const;
 
-export const getUpdateUserMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
+export const getUpdateUserMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,UpdateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,UpdateUserMutationVariables, TContext> => {
 
@@ -599,13 +601,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateUser>>>
     export type UpdateUserMutationBody = BodyType<UpdateUserRequest>
-    export type UpdateUserMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>
+    export type UpdateUserMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
     export type UpdateUserMutationVariables = {userId: string;data: BodyType<UpdateUserRequest>}
 
     /**
  * @summary 更新用户
  */
-export const useUpdateUser = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
+export const useUpdateUser = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,UpdateUserMutationVariables, TContext>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateUser>>,
@@ -642,7 +644,7 @@ export const getListRoleOptionsQueryKey = () => {
     }
 
 
-export const getListRoleOptionsQueryOptions = <TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+export const getListRoleOptionsQueryOptions = <TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>>, request?: SecondParameter<typeof request>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -661,10 +663,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListRoleOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof listRoleOptions>>>
-export type ListRoleOptionsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse>
+export type ListRoleOptionsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
 
-export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listRoleOptions>>,
@@ -674,7 +676,7 @@ export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOpt
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listRoleOptions>>,
@@ -684,7 +686,7 @@ export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOpt
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -692,7 +694,7 @@ export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOpt
  * @summary 获取可分配角色目录
  */
 
-export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoleOptions<TData = Awaited<ReturnType<typeof listRoleOptions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoleOptions>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -736,7 +738,7 @@ export const getListPermissionsQueryKey = () => {
     }
 
 
-export const getListPermissionsQueryOptions = <TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>>, request?: SecondParameter<typeof request>}
+export const getListPermissionsQueryOptions = <TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>>, request?: SecondParameter<typeof request>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -755,10 +757,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListPermissionsQueryResult = NonNullable<Awaited<ReturnType<typeof listPermissions>>>
-export type ListPermissionsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse>
+export type ListPermissionsQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
 
-export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listPermissions>>,
@@ -768,7 +770,7 @@ export function useListPermissions<TData = Awaited<ReturnType<typeof listPermiss
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listPermissions>>,
@@ -778,7 +780,7 @@ export function useListPermissions<TData = Awaited<ReturnType<typeof listPermiss
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -786,7 +788,7 @@ export function useListPermissions<TData = Awaited<ReturnType<typeof listPermiss
  * @summary 获取权限目录
  */
 
-export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListPermissions<TData = Awaited<ReturnType<typeof listPermissions>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPermissions>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -829,7 +831,7 @@ export const getListRolesQueryKey = () => {
     }
 
 
-export const getListRolesQueryOptions = <TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>>, request?: SecondParameter<typeof request>}
+export const getListRolesQueryOptions = <TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>>, request?: SecondParameter<typeof request>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -848,10 +850,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListRolesQueryResult = NonNullable<Awaited<ReturnType<typeof listRoles>>>
-export type ListRolesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse>
+export type ListRolesQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
 
-export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listRoles>>,
@@ -861,7 +863,7 @@ export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TErr
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listRoles>>,
@@ -871,7 +873,7 @@ export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TErr
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -879,7 +881,7 @@ export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TErr
  * @summary 查询角色和权限
  */
 
-export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>>(
+export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -920,7 +922,7 @@ export const updateRole = (
 
 export const getUpdateRoleMutationKey = () => ['updateRole'] as const;
 
-export const getUpdateRoleMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
+export const getUpdateRoleMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,UpdateRoleMutationVariables, TContext>, request?: SecondParameter<typeof request>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,UpdateRoleMutationVariables, TContext> => {
 
@@ -949,13 +951,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateRoleMutationResult = NonNullable<Awaited<ReturnType<typeof updateRole>>>
     export type UpdateRoleMutationBody = BodyType<UpdateRoleRequest>
-    export type UpdateRoleMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>
+    export type UpdateRoleMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
     export type UpdateRoleMutationVariables = {roleCode: RoleCode;data: BodyType<UpdateRoleRequest>}
 
     /**
  * @summary 更新角色权限和数据范围
  */
-export const useUpdateRole = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse>,
+export const useUpdateRole = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,UpdateRoleMutationVariables, TContext>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateRole>>,

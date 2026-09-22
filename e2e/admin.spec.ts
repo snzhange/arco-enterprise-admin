@@ -265,3 +265,69 @@ test('keeps role management read-only without roles write permission', async ({ 
   await expect(operatorRow.getByText('只读', { exact: true })).toBeVisible()
   await expect(operatorRow.getByRole('button', { name: '保存' })).toHaveCount(0)
 })
+
+test('keeps invalid credentials on the login page', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByLabel('工作邮箱').fill('wrong@arco.dev')
+  await page.locator('#password_input').fill('wrongpass')
+  await page.getByRole('button', { name: '登录工作台' }).click()
+
+  await expect(page).toHaveURL(/\/login/)
+  await expect(page.getByRole('alert')).toContainText('邮箱或密码错误')
+})
+
+test('shows a retryable session failure instead of redirecting on session 500', async ({ page }) => {
+  await page.context().addCookies([{ name: 'arco_mock_failure', value: 'session-500', url: 'http://127.0.0.1:5173' }])
+
+  await page.goto('/dashboard/workplace')
+  await expect(page).toHaveURL(/dashboard\/workplace/)
+  await expect(page.getByRole('alert')).toContainText('会话服务暂时不可用')
+  await expect(page.getByRole('button', { name: '重试' })).toBeVisible()
+})
+
+test('handles concurrent business session expiry through one login redirect', async ({ page }) => {
+  await login(page)
+  await page.context().addCookies([{ name: 'arco_mock_failure', value: 'business-401', url: 'http://127.0.0.1:5173' }])
+  await page.reload()
+
+  await expect(page).toHaveURL(/\/login/)
+  await expect(page.getByText('登录状态已过期，请重新登录')).toBeVisible()
+})
+
+test('distinguishes a network failure from authentication failure', async ({ page }) => {
+  await login(page)
+  await page.context().addCookies([{ name: 'arco_mock_failure', value: 'network', url: 'http://127.0.0.1:5173' }])
+  await page.reload()
+
+  await expect(page).toHaveURL(/dashboard\/workplace/)
+  await expect(page.getByRole('alert')).toContainText('网络不可用')
+  await expect(page.getByRole('button', { name: '重试' })).toBeVisible()
+})
+
+test('maps user validation errors back to the form', async ({ page }) => {
+  await login(page)
+  await page.goto('/users')
+
+  const operatorRow = page.locator('.arco-table-tr').filter({ hasText: '周明' })
+  await operatorRow.getByRole('button', { name: '编辑' }).click()
+  await page.context().addCookies([{ name: 'arco_mock_failure', value: 'user-field-error', url: 'http://127.0.0.1:5173' }])
+  await page.getByRole('button', { name: '保存' }).last().click()
+
+  await expect(page.locator('.arco-modal')).toBeVisible()
+  await expect(page.getByText('请选择有效的角色代码')).toBeVisible()
+  await expect(page.locator('.form-error')).toContainText('请检查用户信息')
+})
+
+test('keeps role edits in place after a forbidden save', async ({ page }) => {
+  await login(page)
+  await page.goto('/roles')
+
+  const operatorRow = page.locator('.arco-table-tr').filter({ hasText: '运营人员' })
+  await operatorRow.getByText('查看审计日志', { exact: true }).click()
+  await page.context().addCookies([{ name: 'arco_mock_failure', value: 'role-403', url: 'http://127.0.0.1:5173' }])
+  await operatorRow.getByRole('button', { name: '保存' }).click()
+
+  await expect(page).toHaveURL(/\/roles/)
+  await expect(page.getByText('没有操作权限')).toBeVisible()
+  await expect(operatorRow.getByRole('checkbox', { name: '查看审计日志' })).toBeChecked()
+})

@@ -14,13 +14,13 @@ import { IconSave, IconUndo } from '@arco-design/web-react/icon'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
+import { getErrorMessage, getTraceMessage, isCancelledError, toApiError } from '@/api/errors'
 import {
   getListRolesQueryKey,
   useListPermissions,
   useListRoles,
   useUpdateRole,
 } from '@/api/generated/admin-api'
-import { getErrorMessage } from '@/api/http'
 import { useAuth } from '@/app/auth'
 import { hasPermission } from '@/app/permissions'
 import { PERMISSIONS } from '@/app/permissions.constants'
@@ -142,7 +142,9 @@ export function RolesPage() {
       Message.success('角色权限已保存')
     }
     catch (error) {
-      Message.error(getErrorMessage(error))
+      const apiError = toApiError(error)
+      if (apiError.kind !== 'unauthenticated' && !isCancelledError(apiError))
+        Message.error(getErrorMessage(apiError))
     }
     finally {
       setSavingRoleCodes((current) => {
@@ -230,10 +232,21 @@ export function RolesPage() {
   ]
 
   if (rolesQuery.isError || permissionsQuery.isError) {
+    const error = rolesQuery.error ?? permissionsQuery.error
     return (
       <div className="page-error" role="alert">
         <Title heading={4}>角色权限加载失败</Title>
-        <Text type="secondary">角色或权限目录加载失败，请稍后重试。</Text>
+        <Text type="secondary">{getErrorMessage(error) || '角色或权限目录加载失败，请稍后重试。'}</Text>
+        {getTraceMessage(error) && <Text type="secondary">{getTraceMessage(error)}</Text>}
+        <Button
+          type="primary"
+          onClick={() => {
+            void rolesQuery.refetch()
+            void permissionsQuery.refetch()
+          }}
+        >
+          重试
+        </Button>
       </div>
     )
   }
