@@ -46,6 +46,15 @@ pnpm dev
 
 运营账号拥有只读用户权限，没有角色管理权限，可用于验证菜单过滤、路由 403 和按钮级权限。
 
+最小路由权限演示账号：
+
+```text
+列表账号：list-reader@arco.dev / listreader1234（仅 list:read）
+个人中心账号：user-reader@arco.dev / userreader1234（仅 user:read）
+```
+
+路由、菜单、面包屑和页面权限统一登记在 `src/app/route-manifest.tsx`；新增受保护页面时无需再维护 pathname 权限映射。
+
 ## 接入 Spring Boot
 
 1. 使用 Spring Boot 3、Spring Security 和 `springdoc-openapi`，让 Java DTO/Controller 生成 `/v3/api-docs`。
@@ -65,7 +74,7 @@ pnpm dev
 src/
   api/              HTTP 客户端、OpenAPI 生成代码
   components/       应用布局
-  app/              路由、认证、权限元数据和全局设置
+  app/              route manifest、认证、权限派生 helper 和全局设置
   mocks/            MSW handlers
   pages/            仪表盘、用户、角色、登录页
   test/             测试初始化

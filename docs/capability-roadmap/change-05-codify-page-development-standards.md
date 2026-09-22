@@ -156,20 +156,19 @@ docs/page-development-guide.md
 
 ```tsx
 export function ExampleListPage() {
-  const listState = useListQueryState(...)
-  const query = useListExamples(...)
+  const listState = useListQueryState(/* 参数 */)
+  const query = useListExamples(/* 参数 */)
 
   return (
-    <PageContainer title="示例管理" actions={...}>
-      <QueryForm ...>
-        {/* 显式业务字段 */}
-      </QueryForm>
+    <PageContainer title="示例管理" actions={[] /* 页面操作 */}>
+      <QueryForm>{/* 查询字段 */}</QueryForm>
+      {/* 显式业务字段 */}
       <DataTable
         columns={columns}
         data={query.data?.content ?? []}
         loading={query.isPending}
         error={query.error}
-        pagination={...}
+        pagination={{ current: listState.page, pageSize: listState.pageSize }}
       />
     </PageContainer>
   )
@@ -317,4 +316,3 @@ $openspec-propose
 以已经落地的 route manifest、ApiError 和企业页面组件为事实基础，
 主要产出中文页面开发指南、仓库入口更新和少量关键视觉回归；不要重新设计组件 API。
 ```
-

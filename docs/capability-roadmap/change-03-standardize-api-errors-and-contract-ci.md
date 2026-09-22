@@ -43,15 +43,15 @@
 建议定义应用级错误，不让页面直接判断 Axios 结构：
 
 ```ts
-type ApiErrorKind =
-  | 'validation'
-  | 'unauthenticated'
-  | 'forbidden'
-  | 'not-found'
-  | 'network'
-  | 'timeout'
-  | 'server'
-  | 'unknown'
+type ApiErrorKind
+  = | 'validation'
+    | 'unauthenticated'
+    | 'forbidden'
+    | 'not-found'
+    | 'network'
+    | 'timeout'
+    | 'server'
+    | 'unknown'
 
 interface ApiError {
   kind: ApiErrorKind
@@ -243,4 +243,3 @@ $openspec-propose
 重点先明确错误分类和会话 401 策略，再设计 OpenAPI 生成零 diff 与 E2E CI。
 不要在本 change 中提前实现 DataTable、QueryForm 或页面开发规范。
 ```
-

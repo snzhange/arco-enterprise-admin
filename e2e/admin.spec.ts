@@ -10,9 +10,13 @@ async function login(page: Page) {
 }
 
 async function loginAsOperator(page: Page) {
+  await loginAs(page, 'operator@arco.dev', 'operator1234')
+}
+
+async function loginAs(page: Page, email: string, password: string) {
   await page.goto('/login')
-  await page.getByRole('textbox', { name: '工作邮箱' }).fill('operator@arco.dev')
-  await page.locator('#password_input').fill('operator1234')
+  await page.getByRole('textbox', { name: '工作邮箱' }).fill(email)
+  await page.locator('#password_input').fill(password)
   await page.getByRole('button', { name: '登录工作台' }).click()
   await expect(page).toHaveURL(/dashboard/)
 }
@@ -89,6 +93,27 @@ test('opens every official Arco Design Pro route', async ({ page }) => {
   expect(errors).toEqual([])
 })
 
+test('preserves redirects, hidden routes, 404 fallback and breadcrumb metadata', async ({ page }) => {
+  await login(page)
+
+  await page.goto('/')
+  await expect(page).toHaveURL(/dashboard\/workplace/)
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL(/dashboard\/workplace/)
+
+  await page.goto('/welcome')
+  await expect(page.getByText('欢迎使用 Arco Design Pro', { exact: true })).toBeVisible()
+  await expect(page.locator('.app-menu').getByText('Welcome', { exact: true })).toBeHidden()
+
+  await page.goto('/result/success')
+  await expect(page.locator('.layout-breadcrumb')).toBeHidden()
+  await page.goto('/profile/basic')
+  await expect(page.locator('.layout-breadcrumb')).toBeVisible()
+
+  await page.goto('/route-that-does-not-exist')
+  await expect(page.getByText('页面不存在', { exact: true })).toBeVisible()
+})
+
 test('persists the mock session and exposes official global controls', async ({ page }) => {
   await login(page)
   await page.reload()
@@ -112,6 +137,32 @@ test('filters operator navigation and guards restricted role routes', async ({ p
   await expect(page.getByText('角色与权限', { exact: true })).toBeHidden()
 
   await page.goto('/roles')
+  await expect(page.getByText('抱歉，你没有权限访问该页面。', { exact: true })).toBeVisible()
+})
+
+test('keeps list permission aligned between menu and direct access', async ({ page }) => {
+  await loginAs(page, 'list-reader@arco.dev', 'listreader1234')
+
+  await page.getByText('列表页', { exact: true }).click()
+  await expect(page.getByText('查询表格', { exact: true })).toBeVisible()
+  await page.getByText('查询表格', { exact: true }).click()
+  await expect(page).toHaveURL(/list\/search-table/)
+  await expect(page.getByRole('heading', { name: '查询表格' })).toBeVisible()
+
+  await page.goto('/dashboard/workplace')
+  await expect(page.getByText('抱歉，你没有权限访问该页面。', { exact: true })).toBeVisible()
+})
+
+test('keeps user permission aligned between menu and direct access', async ({ page }) => {
+  await loginAs(page, 'user-reader@arco.dev', 'userreader1234')
+
+  await page.getByText('个人中心', { exact: true }).click()
+  await expect(page.getByText('用户信息', { exact: true })).toBeVisible()
+  await page.getByText('用户信息', { exact: true }).click()
+  await expect(page).toHaveURL(/user\/info/)
+  await expect(page.getByText('我的项目', { exact: true })).toBeVisible()
+
+  await page.goto('/dashboard/workplace')
   await expect(page.getByText('抱歉，你没有权限访问该页面。', { exact: true })).toBeVisible()
 })
 

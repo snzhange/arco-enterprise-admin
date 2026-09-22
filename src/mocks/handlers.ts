@@ -41,11 +41,37 @@ const operatorUser: CurrentUser = {
   dataScope: 'department',
 }
 
+const listReaderUser: CurrentUser = {
+  ...adminUser,
+  id: '00000000-0000-4000-8000-000000000003',
+  displayName: '列表用户',
+  email: 'list-reader@arco.dev',
+  permissions: ['list:read'],
+  roles: ['list-reader'],
+  dataScope: 'self',
+}
+
+const userReaderUser: CurrentUser = {
+  ...adminUser,
+  id: '00000000-0000-4000-8000-000000000004',
+  displayName: '个人中心用户',
+  email: 'user-reader@arco.dev',
+  permissions: ['user:read'],
+  roles: ['user-reader'],
+  dataScope: 'self',
+}
+
 let currentUser: CurrentUser = adminUser
 
 function getCurrentUser(request?: Request): CurrentUser {
   const role = request?.headers.get('X-Mock-Role') || request?.headers.get('cookie')?.match(/arco_mock_role=([^;]+)/)?.[1]
-  return role === 'operator' ? operatorUser : currentUser
+  if (role === 'operator')
+    return operatorUser
+  if (role === 'list-reader')
+    return listReaderUser
+  if (role === 'user-reader')
+    return userReaderUser
+  return currentUser
 }
 
 const defaultRoles: RoleSummary[] = [
@@ -164,6 +190,20 @@ export const handlers = [
     }
     if (body.email === 'operator@arco.dev' && body.password === 'operator1234') {
       currentUser = operatorUser
+      return new HttpResponse(null, {
+        status: 204,
+        headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
+      })
+    }
+    if (body.email === 'list-reader@arco.dev' && body.password === 'listreader1234') {
+      currentUser = listReaderUser
+      return new HttpResponse(null, {
+        status: 204,
+        headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
+      })
+    }
+    if (body.email === 'user-reader@arco.dev' && body.password === 'userreader1234') {
+      currentUser = userReaderUser
       return new HttpResponse(null, {
         status: 204,
         headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },

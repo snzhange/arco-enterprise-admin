@@ -53,8 +53,17 @@ export function LoginPage() {
   const login = useLogin({
     mutation: {
       onSuccess: async () => {
-        if (import.meta.env.VITE_ENABLE_MOCK === 'true')
-          setMockSession(form.getFieldValue('email') === 'operator@arco.dev' ? 'operator' : 'admin')
+        if (import.meta.env.VITE_ENABLE_MOCK === 'true') {
+          const email = form.getFieldValue('email')
+          const role = email === 'operator@arco.dev'
+            ? 'operator'
+            : email === 'list-reader@arco.dev'
+              ? 'list-reader'
+              : email === 'user-reader@arco.dev'
+                ? 'user-reader'
+                : 'admin'
+          setMockSession(role)
+        }
         await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() })
         Message.success('登录成功')
         const from = (location.state as { from?: string } | null)?.from
