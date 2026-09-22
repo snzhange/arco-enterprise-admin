@@ -60,9 +60,11 @@ pnpm dev
 1. 使用 Spring Boot 3、Spring Security 和 `springdoc-openapi`，让 Java DTO/Controller 生成 `/v3/api-docs`。
 2. 将 `orval.config.ts` 的 `input.target` 改为后端地址，例如 `http://localhost:8080/v3/api-docs`。
 3. 执行 `pnpm generate:api`，生成结果写入 `src/api/generated`。
-4. 生产环境使用同源网关，让前端请求保持 `/api/...`；本地通过 `VITE_API_PROXY_TARGET` 代理。
-5. 登录接口写入 HttpOnly、Secure、SameSite 会话 Cookie；不要在响应体或 localStorage 返回长期 Token。
-6. Java 的 `Page<T>` 建议映射到契约中的 `content/page/size/totalElements/totalPages`。
+4. 执行 `pnpm check:api`，校验 OpenAPI、重新生成客户端、检查 `src/api/generated` 零 diff 并运行类型检查。
+   当前前端仓库没有 Java 服务端基线，因此该命令不做跨仓库 breaking-change 比较；Spring Security 的 401/403 和数据范围契约由 Java 仓库测试负责。
+5. 生产环境使用同源网关，让前端请求保持 `/api/...`；本地通过 `VITE_API_PROXY_TARGET` 代理。
+6. 登录接口写入 HttpOnly、Secure、SameSite 会话 Cookie；不要在响应体或 localStorage 返回长期 Token。
+7. Java 的 `Page<T>` 建议映射到契约中的 `content/page/size/totalElements/totalPages`。
 
 当前 `openapi/admin-api.yaml` 是可运行示例契约，接入真实后端时应由 Java 的 `/v3/api-docs` 替换，而不是长期维护两份模型。
 
@@ -105,6 +107,7 @@ vendor/arco-design/ 最新 Arco Design 源码快照
 ## 验证
 
 ```bash
+pnpm check:api
 pnpm typecheck
 pnpm lint
 pnpm test

@@ -1,9 +1,34 @@
 // @env browser
 
-import type { AxiosError, AxiosRequestConfig } from 'axios'
-import type { ProblemPayload } from './types'
+import type { AxiosRequestConfig } from 'axios'
 
 import axios from 'axios'
+import { notifySessionExpired } from '@/app/session-expired'
+import { getErrorMessage as getNormalizedErrorMessage, toApiError } from './errors'
+
+export type { ApiError, ApiErrorKind, ApiFieldError } from './errors'
+export {
+  applyFieldErrors,
+  getFieldErrors,
+  getErrorMessage as getNormalizedMessage,
+  getTraceId,
+  getTraceMessage,
+  isApiError,
+  isCancelledError,
+  toApiError,
+} from './errors'
+
+export type RequestPolicy = 'business' | 'session' | 'login' | 'logout'
+
+export interface RequestOptions extends AxiosRequestConfig {
+  errorPolicy?: RequestPolicy
+  suppressSessionExpiry?: boolean
+  onApiError?: (error: ReturnType<typeof toApiError>) => void
+}
+
+export type HttpRequestConfig = AxiosRequestConfig & {
+  errorPolicy?: RequestPolicy
+}
 
 export const httpClient = axios.create({
   // Keep API calls same-origin by default. The runtime bootstrap may set a service URL.
@@ -27,29 +52,37 @@ if (import.meta.env.VITE_ENABLE_MOCK === 'true') {
       const role = document.cookie.match(/arco_mock_role=([^;]+)/)?.[1]
       if (role)
         config.headers.set('X-Mock-Role', role)
+      const failure = document.cookie.match(/arco_mock_failure=([^;]+)/)?.[1]
+      if (failure)
+        config.headers.set('X-Mock-Failure', failure)
     }
     return config
   })
 }
 
 export function request<T>(
-  config: AxiosRequestConfig,
-  options?: AxiosRequestConfig,
+  config: HttpRequestConfig,
+  options?: RequestOptions,
 ): Promise<T> {
+  const policy = options?.errorPolicy ?? config.errorPolicy ?? 'business'
+  const { errorPolicy: _configPolicy, ...baseConfig } = config
+  const { errorPolicy: _optionPolicy, suppressSessionExpiry, onApiError, ...axiosOptions } = options ?? {}
+
   return httpClient
-    .request<T>({ ...config, ...options })
+    .request<T>({ ...baseConfig, ...axiosOptions })
     .then(response => response.data)
+    .catch((cause: unknown) => {
+      const error = toApiError(cause)
+      if (error.kind === 'unauthenticated' && policy === 'business' && !suppressSessionExpiry)
+        notifySessionExpired(error)
+      onApiError?.(error)
+      throw error
+    })
 }
 
-export type ErrorType<T = unknown> = AxiosError<T>
+export type ErrorType<_T = unknown> = ReturnType<typeof toApiError> & { cause: unknown }
 export type BodyType<T> = T
 
 export function getErrorMessage(error: unknown): string {
-  if (axios.isAxiosError<ProblemPayload>(error)) {
-    return error.response?.data.detail
-      || error.response?.data.title
-      || error.message
-  }
-
-  return error instanceof Error ? error.message : '请求失败，请稍后重试'
+  return getNormalizedErrorMessage(error)
 }

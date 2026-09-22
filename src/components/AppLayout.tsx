@@ -33,6 +33,7 @@ import { getGetCurrentUserQueryKey, useLogout } from '@/api/generated/admin-api'
 import { useAuth } from '@/app/auth'
 import { useLocale } from '@/app/i18n'
 import { getNavigationGroup, getNavigationItem, getVisibleNavigationGroups } from '@/app/route-manifest'
+import { resetSessionExpired } from '@/app/session-expired'
 import { useAppSettings } from '@/app/settings'
 import { THEME_COLORS } from '@/app/settings/constants'
 import arcoProLogo from '@/assets/arco-pro-logo.svg'
@@ -62,11 +63,13 @@ export function AppLayout() {
   const logout = useLogout({
     mutation: {
       onSuccess: async () => {
+        resetSessionExpired()
         await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() })
         navigate('/login', { replace: true })
       },
       onError: () => Message.error('退出失败，请稍后重试'),
     },
+    request: { errorPolicy: 'logout', suppressSessionExpiry: true },
   })
 
   const menuWidth = collapsed ? COLLAPSED_WIDTH : settings.menuWidth

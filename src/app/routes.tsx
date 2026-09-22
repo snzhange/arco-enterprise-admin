@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
 
 import type { RouteMatch } from '@/app/route-manifest'
-import { Suspense } from 'react'
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
-import { useGetCurrentUser } from '@/api/generated/admin-api'
+import { Message } from '@arco-design/web-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Suspense, useEffect } from 'react'
+import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { toApiError } from '@/api/errors'
+import { getGetCurrentUserQueryKey, useGetCurrentUser } from '@/api/generated/admin-api'
 import { AuthProvider, useAuth } from '@/app/auth'
 import { LoadingScreen } from '@/app/LoadingScreen'
 import {
@@ -13,6 +16,8 @@ import {
   redirectRouteManifest,
   toNestedRoutePath,
 } from '@/app/route-manifest'
+import { configureSessionExpiredHandler, toSafeReturnPath } from '@/app/session-expired'
+import { SessionErrorState } from '@/app/SessionErrorState'
 import { AccessDenied } from '@/components/AccessDenied'
 import { AppLayout } from '@/components/AppLayout'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -35,14 +40,39 @@ function ManifestPage({ match }: { match: RouteMatch }) {
 
 function ProtectedLayout() {
   const location = useLocation()
-  const session = useGetCurrentUser({ query: { retry: false } })
+  const session = useGetCurrentUser({
+    query: { retry: false },
+    request: { errorPolicy: 'session', suppressSessionExpiry: true },
+  })
 
   if (session.isPending)
     return <LoadingScreen />
-  if (session.isError || !session.data)
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (session.isError || !session.data) {
+    const error = toApiError(session.error)
+    if (error.kind === 'unauthenticated') {
+      const from = toSafeReturnPath(`${location.pathname}${location.search}${location.hash}`)
+      return <Navigate to="/login" replace state={{ from }} />
+    }
+    return <SessionErrorState error={error} onRetry={() => void session.refetch()} />
+  }
 
   return <AuthProvider user={session.data}><Outlet /></AuthProvider>
+}
+
+function SessionExpiredBridge() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  useEffect(() => configureSessionExpiredHandler(async () => {
+    await queryClient.cancelQueries({ queryKey: getGetCurrentUserQueryKey() })
+    queryClient.removeQueries({ queryKey: getGetCurrentUserQueryKey() })
+    const from = toSafeReturnPath(`${location.pathname}${location.search}${location.hash}`)
+    Message.warning('登录状态已过期，请重新登录')
+    navigate('/login', { replace: true, state: { from } })
+  }), [location.hash, location.pathname, location.search, navigate, queryClient])
+
+  return null
 }
 
 function LazyPage({ children }: { children: ReactNode }) {
@@ -51,27 +81,30 @@ function LazyPage({ children }: { children: ReactNode }) {
 
 export function AppRoutes() {
   return (
-    <Routes>
-      {publicRouteManifest.map(route => (
-        <Route key={route.path} path={toNestedRoutePath(route.path)} element={<route.component />} />
-      ))}
-      <Route element={<ProtectedLayout />}>
-        <Route element={<AppLayout />}>
-          {redirectRouteManifest.map(route => (
-            route.path === '/'
-              ? <Route key={route.path} index element={<Navigate to={route.to} replace />} />
-              : <Route key={route.path} path={toNestedRoutePath(route.path)} element={<Navigate to={route.to} replace />} />
-          ))}
-          {protectedRouteMatches.map(match => (
-            <Route
-              key={match.route.path}
-              path={toNestedRoutePath(match.route.path)}
-              element={<ManifestPage match={match} />}
-            />
-          ))}
+    <>
+      <SessionExpiredBridge />
+      <Routes>
+        {publicRouteManifest.map(route => (
+          <Route key={route.path} path={toNestedRoutePath(route.path)} element={<route.component />} />
+        ))}
+        <Route element={<ProtectedLayout />}>
+          <Route element={<AppLayout />}>
+            {redirectRouteManifest.map(route => (
+              route.path === '/'
+                ? <Route key={route.path} index element={<Navigate to={route.to} replace />} />
+                : <Route key={route.path} path={toNestedRoutePath(route.path)} element={<Navigate to={route.to} replace />} />
+            ))}
+            {protectedRouteMatches.map(match => (
+              <Route
+                key={match.route.path}
+                path={toNestedRoutePath(match.route.path)}
+                element={<ManifestPage match={match} />}
+              />
+            ))}
+          </Route>
         </Route>
-      </Route>
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
   )
 }

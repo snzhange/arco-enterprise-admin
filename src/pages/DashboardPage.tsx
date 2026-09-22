@@ -1,4 +1,5 @@
 import {
+  Button,
   Card,
   Carousel,
   Divider,
@@ -24,8 +25,8 @@ import {
 } from '@arco-design/web-react/icon'
 
 import { useMemo, useState } from 'react'
+import { getErrorMessage, getTraceMessage } from '@/api/errors'
 import { useGetDashboardSummary } from '@/api/generated/admin-api'
-import { getErrorMessage } from '@/api/http'
 import { useAuth } from '@/app/auth'
 import carouselOne from '@/assets/workplace-carousel-1.webp'
 import carouselTwo from '@/assets/workplace-carousel-2.webp'
@@ -70,17 +71,20 @@ const workplaceCarouselImages = [carouselOne, carouselTwo, carouselThree, carous
 
 export function DashboardPage() {
   const user = useAuth()
-  const summary = useGetDashboardSummary()
+  const summary = useGetDashboardSummary({ query: { retry: false } })
 
   if (summary.isPending) {
     return <Skeleton loading animation className="page-skeleton" />
   }
 
   if (summary.isError || !summary.data) {
+    const traceMessage = getTraceMessage(summary.error)
     return (
       <div className="page-error" role="alert">
         <Title heading={4}>暂时无法加载工作台</Title>
         <Text type="secondary">{getErrorMessage(summary.error)}</Text>
+        {traceMessage && <Text type="secondary">{traceMessage}</Text>}
+        <Button type="primary" onClick={() => void summary.refetch()}>重试</Button>
       </div>
     )
   }

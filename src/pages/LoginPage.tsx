@@ -17,12 +17,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import { applyFieldErrors, getErrorMessage } from '@/api/errors'
 import {
   getGetCurrentUserQueryKey,
   useLogin,
 } from '@/api/generated/admin-api'
-import { getErrorMessage } from '@/api/http'
 import { useLocale } from '@/app/i18n'
+import { resetSessionExpired, toSafeReturnPath } from '@/app/session-expired'
 import arcoProLoginBanner from '@/assets/arco-pro-login-banner.png'
 import arcoProLogo from '@/assets/arco-pro-logo.svg'
 import { setMockSession } from '@/mocks/session'
@@ -53,6 +54,7 @@ export function LoginPage() {
   const login = useLogin({
     mutation: {
       onSuccess: async () => {
+        resetSessionExpired()
         if (import.meta.env.VITE_ENABLE_MOCK === 'true') {
           const email = form.getFieldValue('email')
           const role = email === 'operator@arco.dev'
@@ -66,11 +68,15 @@ export function LoginPage() {
         }
         await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() })
         Message.success('登录成功')
-        const from = (location.state as { from?: string } | null)?.from
-        navigate(from || '/dashboard/workplace', { replace: true })
+        const from = toSafeReturnPath((location.state as { from?: string } | null)?.from)
+        navigate(from, { replace: true })
       },
-      onError: error => setErrorMessage(getErrorMessage(error)),
+      onError: (error) => {
+        const formError = applyFieldErrors(form, error)
+        setErrorMessage(formError || getErrorMessage(error))
+      },
     },
+    request: { errorPolicy: 'login', suppressSessionExpiry: true },
   })
 
   const submit = async (): Promise<void> => {
