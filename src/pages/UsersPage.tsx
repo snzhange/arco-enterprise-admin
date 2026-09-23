@@ -1,30 +1,31 @@
+import type { TableProps } from '@arco-design/web-react'
+import type { ColumnProps } from '@arco-design/web-react/es/Table'
 import type {
   CreateUserRequest,
+  ListUsersParams,
   RoleOption,
   UpdateUserRequest,
   User,
   UserStatus,
 } from '@/api/generated/models'
 
+import type { ListQueryStateOptions, ListSortDirection } from '@/hooks/useListQueryState'
 import {
   Button,
   Card,
+  Drawer,
   Form,
   Input,
   Message,
-  Modal,
-  Pagination,
   Select,
   Space,
-  Table,
   Tag,
   Typography,
 } from '@arco-design/web-react'
-import { IconPlus, IconRefresh, IconSearch, IconUserAdd } from '@arco-design/web-react/icon'
+import { IconEye, IconPlus, IconUserAdd } from '@arco-design/web-react/icon'
 import { useQueryClient } from '@tanstack/react-query'
-
-import { useMemo, useState } from 'react'
-import { applyFieldErrors, getErrorMessage, getTraceMessage, isCancelledError, toApiError } from '@/api/errors'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { applyFieldErrors, getErrorMessage, isCancelledError, toApiError } from '@/api/errors'
 import {
   getListUsersQueryKey,
   useCreateUser,
@@ -35,9 +36,17 @@ import {
 import { useAuth } from '@/app/auth'
 import { hasPermission } from '@/app/permissions'
 import { PERMISSIONS } from '@/app/permissions.constants'
-import { Permission } from '@/components/Permission'
+import { DataTable } from '@/components/data/DataTable'
+import { DetailPanel } from '@/components/data/DetailPanel'
+import { QueryForm } from '@/components/data/QueryForm'
+import { CrudDrawer } from '@/components/form/CrudDrawer'
+import { PageContainer } from '@/components/page/PageContainer'
+import { PageForbiddenState } from '@/components/page/PageState'
+import { useListQueryState } from '@/hooks/useListQueryState'
 
-const { Title, Text } = Typography
+const { Text } = Typography
+
+type UserSortField = 'name' | 'lastActiveAt'
 
 interface UserFormValues {
   name?: CreateUserRequest['name']
@@ -47,10 +56,18 @@ interface UserFormValues {
   roleCodes?: string[]
 }
 
-function roleLabel(option: RoleOption | undefined, code: string): string {
-  if (!option)
-    return `未知角色（${code}）`
-  return option.active ? option.name : `${option.name}（已停用）`
+interface UserQueryValues {
+  keyword?: string
+  status?: UserStatus
+}
+
+const USER_LIST_STATE_OPTIONS: ListQueryStateOptions<'status', UserSortField> = {
+  filterValues: {
+    status: ['active', 'invited', 'disabled'],
+  },
+  sortFields: ['name', 'lastActiveAt'],
+  defaultPageSize: 10,
+  maxPageSize: 100,
 }
 
 const statusMeta: Record<UserStatus, { label: string, color: string }> = {
@@ -59,27 +76,70 @@ const statusMeta: Record<UserStatus, { label: string, color: string }> = {
   disabled: { label: '已停用', color: 'gray' },
 }
 
+function roleLabel(option: RoleOption | undefined, code: string): string {
+  if (!option)
+    return `未知角色（${code}）`
+  return option.active ? option.name : `${option.name}（已停用）`
+}
+
+function formatLastActiveAt(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime()))
+    return value
+
+  return date.toLocaleString('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function toArcoSortOrder(direction: ListSortDirection | undefined): 'ascend' | 'descend' | undefined {
+  if (direction === 'asc')
+    return 'ascend'
+  if (direction === 'desc')
+    return 'descend'
+  return undefined
+}
+
 export function UsersPage() {
   const user = useAuth()
-  const canRead = hasPermission(user, 'users:read')
+  const canRead = hasPermission(user, PERMISSIONS.usersRead)
   const canEdit = hasPermission(user, PERMISSIONS.usersWrite)
-  const [searchForm] = Form.useForm<{ keyword?: string, status?: UserStatus }>()
+  const [searchForm] = Form.useForm<UserQueryValues>()
   const [userForm] = Form.useForm<UserFormValues>()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [filters, setFilters] = useState<{ keyword?: string, status?: UserStatus }>({})
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
+  const [keyword, setKeyword] = useState('')
+  const [selection, setSelection] = useState<{ context: string, keys: string[] }>({ context: '', keys: [] })
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [modalVisible, setModalVisible] = useState(false)
+  const [editorVisible, setEditorVisible] = useState(false)
+  const [detailUser, setDetailUser] = useState<User | null>(null)
   const [formErrorMessage, setFormErrorMessage] = useState('')
-
+  const listState = useListQueryState(USER_LIST_STATE_OPTIONS)
   const queryClient = useQueryClient()
-  const params = useMemo(() => ({
-    page: page - 1,
-    size: pageSize,
-    keyword: filters.keyword || undefined,
-    status: filters.status,
-  }), [filters.keyword, filters.status, page, pageSize])
+
+  useEffect(() => {
+    searchForm.setFieldsValue({ status: listState.filters.status as UserStatus | undefined })
+  }, [listState.filters.status, searchForm])
+
+  const selectionContext = JSON.stringify([
+    keyword,
+    listState.filters.status,
+    listState.page,
+    listState.pageSize,
+    listState.sort,
+  ])
+  const selectedRowKeys = selection.context === selectionContext ? selection.keys : []
+  const setSelectedRowKeys = (keys: string[]) => setSelection({ context: selectionContext, keys })
+
+  const params = useMemo<ListUsersParams>(() => ({
+    page: listState.requestPage,
+    size: listState.pageSize,
+    keyword: keyword || undefined,
+    status: listState.filters.status as UserStatus | undefined,
+    sort: listState.sort ? `${listState.sort.field},${listState.sort.direction}` : undefined,
+  }), [keyword, listState.filters.status, listState.pageSize, listState.requestPage, listState.sort])
+
   const usersQuery = useListUsers(params, {
     query: {
       placeholderData: previous => previous,
@@ -121,25 +181,35 @@ export function UsersPage() {
   const roleDirectoryReady = !roleOptionsQuery.isPending
     && !roleOptionsQuery.isError
     && roleDirectory.length > 0
+  const usersForbidden = usersQuery.isError && toApiError(usersQuery.error).kind === 'forbidden'
+  const data = usersQuery.data
+  const currentPage = data && !usersQuery.isPlaceholderData ? data.page + 1 : listState.page
+  const currentPageSize = data && !usersQuery.isPlaceholderData ? data.size : listState.pageSize
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     setEditingUser(null)
     setFormErrorMessage('')
     userForm.resetFields()
-    setModalVisible(true)
-  }
+    userForm.setFieldsValue({ roleCodes: [], status: 'active' })
+    setEditorVisible(true)
+  }, [userForm])
 
-  const openEdit = (user: User) => {
-    setEditingUser(user)
+  const openEdit = useCallback((record: User) => {
+    setEditingUser(record)
     setFormErrorMessage('')
+    userForm.resetFields()
     userForm.setFieldsValue({
-      name: user.name,
-      email: user.email,
-      department: user.department,
-      status: user.status,
-      roleCodes: user.roleCodes,
+      name: record.name,
+      email: record.email,
+      department: record.department,
+      status: record.status,
+      roleCodes: record.roleCodes,
     })
-    setModalVisible(true)
+    setEditorVisible(true)
+  }, [userForm])
+
+  const closeEditor = () => {
+    setEditorVisible(false)
   }
 
   const submitUser = async () => {
@@ -190,7 +260,7 @@ export function UsersPage() {
         Message.success('用户已创建')
       }
       await queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() })
-      setModalVisible(false)
+      closeEditor()
     }
     catch (error) {
       const apiError = toApiError(error)
@@ -203,12 +273,13 @@ export function UsersPage() {
     }
   }
 
-  const data = usersQuery.data
-  const columns = [
+  const columns = useMemo<ColumnProps<User>[]>(() => [
     {
       title: '用户',
       dataIndex: 'name',
       width: 220,
+      sorter: true,
+      sortOrder: listState.sort?.field === 'name' ? toArcoSortOrder(listState.sort.direction) : undefined,
       render: (_: unknown, record: User) => (
         <div className="user-cell">
           <div className="table-avatar">{record.name.slice(0, 1)}</div>
@@ -226,7 +297,9 @@ export function UsersPage() {
       render: (roleCodes: string[]) => (
         <Space wrap>
           {roleCodes.map(code => (
-            <Tag key={code} color="arcoblue" bordered={false}>{roleLabel(roleDirectoryByCode.get(code), code)}</Tag>
+            <Tag key={code} color="arcoblue" bordered={false}>
+              {canEdit ? roleLabel(roleDirectoryByCode.get(code), code) : code}
+            </Tag>
           ))}
         </Space>
       ),
@@ -241,141 +314,193 @@ export function UsersPage() {
       title: '最近活跃',
       dataIndex: 'lastActiveAt',
       width: 170,
-      render: (value: string) => <Text type="secondary">{new Date(value).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>,
+      sorter: true,
+      sortOrder: listState.sort?.field === 'lastActiveAt' ? toArcoSortOrder(listState.sort.direction) : undefined,
+      render: (value: string) => <Text type="secondary">{formatLastActiveAt(value)}</Text>,
     },
     {
       title: '操作',
-      width: 90,
+      width: canEdit ? 140 : 74,
       render: (_: unknown, record: User) => (
-        <Permission all={[PERMISSIONS.usersWrite]} fallback={<Text type="secondary">只读</Text>}>
-          <Button type="text" size="small" onClick={() => openEdit(record)}>编辑</Button>
-        </Permission>
+        <Space size="mini">
+          <Button type="text" size="small" icon={<IconEye />} onClick={() => setDetailUser(record)}>查看</Button>
+          {canEdit && <Button type="text" size="small" onClick={() => openEdit(record)}>编辑</Button>}
+        </Space>
       ),
     },
-  ]
+  ], [canEdit, listState.sort, openEdit, roleDirectoryByCode])
 
-  if (!canRead) {
+  const detailItems = useMemo(() => {
+    if (!detailUser)
+      return []
+
+    return [
+      { key: 'name', label: '姓名', value: detailUser.name },
+      { key: 'email', label: '工作邮箱', value: detailUser.email },
+      { key: 'department', label: '部门', value: detailUser.department },
+      { key: 'status', label: '状态', value: <Tag color={statusMeta[detailUser.status].color}>{statusMeta[detailUser.status].label}</Tag> },
+      {
+        key: 'roles',
+        label: '角色',
+        span: 2,
+        value: (
+          <Space wrap>
+            {detailUser.roleCodes.map(code => (
+              <Tag key={code} color="arcoblue" bordered={false}>
+                {canEdit ? roleLabel(roleDirectoryByCode.get(code), code) : code}
+              </Tag>
+            ))}
+          </Space>
+        ),
+      },
+      { key: 'lastActiveAt', label: '最近活跃', value: formatLastActiveAt(detailUser.lastActiveAt) },
+    ]
+  }, [canEdit, detailUser, roleDirectoryByCode])
+
+  const handleTableChange: NonNullable<TableProps<User>['onChange']> = (_pagination, sorter) => {
+    const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter
+    const field = activeSorter?.field
+    if ((field === 'name' || field === 'lastActiveAt') && activeSorter.direction) {
+      listState.setSort({
+        field,
+        direction: activeSorter.direction === 'ascend' ? 'asc' : 'desc',
+      })
+      return
+    }
+    listState.setSort()
+  }
+
+  const pageActions = canEdit
+    ? <Button type="primary" icon={<IconPlus />} onClick={openCreate}>新增用户</Button>
+    : undefined
+
+  if (!canRead || usersForbidden) {
     return (
-      <div className="page-container users-page">
-        <div className="page-error" role="alert">
-          <Title heading={4}>无权查看用户</Title>
-          <Text type="secondary">请联系管理员申请 users:read 权限。</Text>
-        </div>
-      </div>
+      <PageContainer
+        className="users-page"
+        eyebrow="TEAM DIRECTORY"
+        title="用户管理"
+        description="管理团队成员、角色与访问状态。"
+        actions={pageActions}
+      >
+        <PageForbiddenState
+          title={!canRead ? '无权查看用户' : '没有查看用户的权限'}
+          description="请联系管理员申请 users:read 权限。"
+        />
+      </PageContainer>
     )
   }
 
   return (
-    <div className="page-container users-page">
-      <div className="page-heading">
-        <div>
-          <Text className="eyebrow">TEAM DIRECTORY</Text>
-          <Title heading={2}>用户管理</Title>
-          <Text type="secondary">管理团队成员、角色与访问状态。</Text>
-        </div>
-        <Permission all={[PERMISSIONS.usersWrite]}>
-          <Button type="primary" icon={<IconPlus />} onClick={openCreate}>新增用户</Button>
-        </Permission>
-      </div>
-
+    <PageContainer
+      className="users-page"
+      eyebrow="TEAM DIRECTORY"
+      title="用户管理"
+      description="管理团队成员、角色与访问状态。"
+      actions={pageActions}
+    >
       <Card className="panel-card user-list-card">
-        <Form
+        <QueryForm<UserQueryValues>
           form={searchForm}
-          layout="inline"
           className="search-toolbar"
+          loading={usersQuery.isFetching}
           onSubmit={(values) => {
-            setPage(1)
-            setFilters(values)
+            setKeyword(values.keyword?.trim() ?? '')
+            listState.setFilters({ status: values.status })
+          }}
+          onReset={() => {
+            setKeyword('')
+            listState.reset()
           }}
         >
           <Form.Item field="keyword" label="关键词">
-            <Input allowClear placeholder="姓名或邮箱" prefix={<IconSearch />} style={{ width: 240 }} />
+            <Input allowClear placeholder="姓名或邮箱" style={{ width: 240 }} />
           </Form.Item>
           <Form.Item field="status" label="状态">
-            <Select allowClear placeholder="全部状态" options={Object.entries(statusMeta).map(([value, meta]) => ({ value, label: meta.label }))} style={{ width: 150 }} />
+            <Select
+              allowClear
+              placeholder="全部状态"
+              options={Object.entries(statusMeta).map(([value, meta]) => ({ value, label: meta.label }))}
+              style={{ width: 150 }}
+            />
           </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<IconSearch />}>查询</Button>
-              <Button
-                icon={<IconRefresh />}
-                onClick={() => {
-                  searchForm.resetFields()
-                  setFilters({})
-                  setPage(1)
-                }}
-              >
-                重置
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-        <div className="table-toolbar">
-          <div>
-            <Text type="secondary">共 </Text>
-            <strong>{data?.totalElements ?? 0}</strong>
-            <Text type="secondary"> 位成员</Text>
-          </div>
-          {selectedRowKeys.length > 0 && (
-            <Text type="secondary">
-              已选择
-              {selectedRowKeys.length}
-              {' '}
-              人
-            </Text>
-          )}
-        </div>
-        <Table<User>
+        </QueryForm>
+
+        <DataTable<User>
+          className="users-data-table"
           rowKey="id"
-          loading={usersQuery.isPending}
           columns={columns}
           data={data?.content ?? []}
-          border={false}
-          stripe
+          loading={usersQuery.isPending || usersQuery.isFetching}
+          error={usersQuery.isError ? usersQuery.error : undefined}
+          onRetry={() => void usersQuery.refetch()}
+          onRefresh={() => void usersQuery.refetch()}
+          onTableChange={handleTableChange}
+          toolbar={(
+            <>
+              <Text type="secondary">共 </Text>
+              <strong>{data?.totalElements ?? 0}</strong>
+              <Text type="secondary"> 位成员</Text>
+            </>
+          )}
+          batchActions={selectedRowKeys.length > 0
+            ? (
+                <Text type="secondary">
+                  已选择
+                  {selectedRowKeys.length}
+                  {' '}
+                  人
+                </Text>
+              )
+            : undefined}
           rowSelection={{
             selectedRowKeys,
             onChange: keys => setSelectedRowKeys(keys.map(String)),
           }}
-          pagination={false}
+          pagination={{
+            current: currentPage,
+            pageSize: currentPageSize,
+            total: data?.totalElements ?? 0,
+            showTotal: true,
+            sizeCanChange: true,
+            sizeOptions: [5, 10, 20, 50, 100],
+            onChange: (nextPage, nextPageSize) => {
+              if (nextPageSize !== listState.pageSize)
+                listState.setPageSize(nextPageSize)
+              else
+                listState.setPage(nextPage)
+            },
+          }}
         />
-        {usersQuery.isError && (
-          <div className="page-error" role="alert">
-            <Text>{getErrorMessage(usersQuery.error)}</Text>
-            {getTraceMessage(usersQuery.error) && <Text type="secondary">{getTraceMessage(usersQuery.error)}</Text>}
-            <Button type="primary" onClick={() => void usersQuery.refetch()}>重试</Button>
-          </div>
-        )}
-        <div className="table-pagination">
-          <Pagination
-            current={page}
-            pageSize={pageSize}
-            total={data?.totalElements ?? 0}
-            showTotal
-            sizeCanChange
-            onChange={(nextPage, nextPageSize) => {
-              setPage(nextPage)
-              setPageSize(nextPageSize)
-            }}
-          />
-        </div>
       </Card>
 
-      <Modal
-        title={editingUser ? '编辑用户' : '新增用户'}
-        visible={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        onOk={submitUser}
-        confirmLoading={createUser.isPending || updateUser.isPending}
-        okButtonProps={{ disabled: !roleDirectoryReady }}
-        okText="保存"
-        cancelText="取消"
-        mountOnEnter={false}
+      <Drawer
+        visible={Boolean(detailUser)}
+        title="用户详情"
+        width={460}
+        footer={null}
+        onCancel={() => setDetailUser(null)}
+        closable
+        maskClosable
+        unmountOnExit
       >
-        <Form
-          form={userForm}
-          layout="vertical"
-          initialValues={{ roleCodes: editingUser?.roleCodes ?? [], status: editingUser?.status ?? 'active' }}
-        >
+        <DetailPanel items={detailItems} />
+      </Drawer>
+
+      <CrudDrawer
+        visible={editorVisible}
+        title={editingUser ? '编辑用户' : '新增用户'}
+        onCancel={closeEditor}
+        onConfirm={submitUser}
+        confirmLoading={createUser.isPending || updateUser.isPending}
+        confirmDisabled={!roleDirectoryReady}
+        afterClose={() => {
+          userForm.resetFields()
+          setEditingUser(null)
+          setFormErrorMessage('')
+        }}
+      >
+        <Form form={userForm} layout="vertical">
           {formErrorMessage && <div className="form-error" role="alert">{formErrorMessage}</div>}
           <Form.Item field="name" label="姓名" rules={[{ required: true, message: '请输入姓名' }, { minLength: 2, message: '姓名至少 2 个字符' }]}>
             <Input prefix={<IconUserAdd />} placeholder="例如：林晓" />
@@ -405,7 +530,7 @@ export function UsersPage() {
             </Form.Item>
           )}
         </Form>
-      </Modal>
-    </div>
+      </CrudDrawer>
+    </PageContainer>
   )
 }

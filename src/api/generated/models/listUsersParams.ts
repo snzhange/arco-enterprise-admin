@@ -19,4 +19,9 @@ page?: number;
 size?: number;
 keyword?: string;
 status?: UserStatus;
+/**
+ * 单字段排序，仅支持 name 或 lastActiveAt，方向为 asc 或 desc。例如 sort=name,asc。
+ * @pattern ^(name|lastActiveAt),(asc|desc)$
+ */
+sort?: string;
 };
