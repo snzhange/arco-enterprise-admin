@@ -55,6 +55,10 @@ pnpm dev
 
 路由、菜单、面包屑和页面权限统一登记在 `src/app/route-manifest.tsx`；新增受保护页面时无需再维护 pathname 权限映射。
 
+## 新增页面
+
+从 [页面开发指南](docs/page-development-guide.md) 开始，按页面数据来源选择业务列表、表单、详情或本地数据模式。指南对应当前已经落地的 route manifest、`ApiError` 与企业页面原语，包含 OpenAPI/Orval 流程、权限边界、响应式与测试验收清单。服务端分页 CRUD 参考 `src/pages/UsersPage.tsx`，本地查询表格参考 `src/pages/official/SearchTablePage.tsx`。
+
 ## 接入 Spring Boot
 
 1. 使用 Spring Boot 3、Spring Security 和 `springdoc-openapi`，让 Java DTO/Controller 生成 `/v3/api-docs`。
@@ -102,7 +106,7 @@ vendor/arco-design/ 最新 Arco Design 源码快照
 | Welcome (ignore route) | `/welcome` |
 | Login | `/login` |
 
-截图校验覆盖桌面 `1440px`、断点 `900px` 和移动端 `390px`；页面级 E2E 会逐一打开官方路由并检查运行时错误。
+关键页面使用固定视口 `1440 x 900`、`900 x 700`、`390 x 844` 的 Playwright `toHaveScreenshot` 断言（工作台、用户列表和表单抽屉）；`e2e/admin.spec.ts` 的普通截图用于调试，不参与基线比对。页面级 E2E 还会逐一打开官方路由并检查运行时错误。视觉基线在 Chromium/Linux 环境维护，失败差异保存在 CI 的 `playwright-diagnostics` artifact。
 
 ## 验证
 
