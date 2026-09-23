@@ -21,6 +21,7 @@ pnpm build
 
 ## 约束
 
+- 新增或调整业务页面先阅读 [页面开发指南](docs/page-development-guide.md)，按其中的路由、请求、页面状态、响应式和验收清单执行。
 - 不要手改 `src/api/generated`。
 - 不要把密码、Token 或会话凭证写入 `localStorage`。生产认证使用 HttpOnly、Secure、SameSite Cookie。
 - 前端权限只负责菜单和界面体验，Java Spring Security 必须在服务端再次鉴权。

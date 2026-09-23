@@ -1,5 +1,7 @@
 # 权限模型与 Spring Security 对接
 
+新增页面的 route manifest、`<Permission>` 和页面错误状态接入步骤见 [页面开发指南](page-development-guide.md)；角色代码、权限目录及数据范围的行为契约见 [RBAC 规范](../openspec/specs/rbac-contracts/spec.md)。
+
 当前前端权限分为三层：
 
 1. `PermissionRequirement`：路由和菜单的 `all / any` 权限元数据。
