@@ -80,6 +80,20 @@ describe('rbac mock contracts', () => {
     expect(roles.find(role => role.code === 'auditor')?.permissions).toContain('legacy:read')
   })
 
+  it('sorts users by the allowed single field with stable id ties and rejects invalid sort parameters', async () => {
+    const response = await fetch('http://localhost/api/users?page=0&size=20&sort=name,asc', { headers: headers() })
+    const users = await response.json() as { content: Array<{ id: string, name: string }> }
+    const expected = [...users.content].sort((left, right) => left.name.localeCompare(right.name, 'zh-CN') || left.id.localeCompare(right.id))
+    expect(users.content.map(user => user.id)).toEqual(expected.map(user => user.id))
+
+    for (const sort of ['name,asc&sort=lastActiveAt,desc', 'unknown,asc', 'name,up', 'name,asc,extra']) {
+      const invalid = await fetch(`http://localhost/api/users?page=0&size=20&sort=${sort}`, { headers: headers() })
+      expect(invalid.status).toBe(400)
+      const problem = await invalid.json() as { fieldErrors?: Array<{ field: string }> }
+      expect(problem.fieldErrors?.[0]?.field).toBe('sort')
+    }
+  })
+
   it('preserves existing inactive or unknown role codes but rejects newly assigned unknown roles', async () => {
     const preserveInactiveResponse = await fetch('http://localhost/api/users/00000000-0000-4000-8000-000000000103', {
       method: 'PATCH',

@@ -413,7 +413,7 @@ export const getListUsersQueryKey = (params?: ListUsersParams,) => {
     }
 
 
-export const getListUsersQueryOptions = <TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
+export const getListUsersQueryOptions = <TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -432,10 +432,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listUsers>>>
-export type ListUsersQueryError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
+export type ListUsersQueryError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>
 
 
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params: undefined |  ListUsersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listUsers>>,
@@ -445,7 +445,7 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listUsers>>,
@@ -455,7 +455,7 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
       >, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -463,7 +463,7 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
  * @summary 分页查询用户
  */
 
-export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | InternalServerErrorResponse | ServiceUnavailableResponse>>(
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof request>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

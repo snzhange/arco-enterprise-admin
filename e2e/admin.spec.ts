@@ -197,7 +197,7 @@ test('uses role codes from the role directory when editing a user', async ({ pag
 
   const operatorRow = page.locator('.arco-table-tr').filter({ hasText: '周明' })
   await operatorRow.getByRole('button', { name: '编辑' }).click()
-  await expect(page.locator('.arco-modal').getByText('运营人员', { exact: true })).toBeVisible()
+  await expect(page.locator('.arco-drawer').getByText('运营人员', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '保存' }).last().click()
   await expect(page.getByText('用户信息已更新', { exact: true })).toBeVisible()
 
@@ -220,12 +220,104 @@ test('preserves an existing unknown role code when editing a user', async ({ pag
 
   const userRow = page.locator('.arco-table-tr').filter({ hasText: '唐川' })
   await userRow.getByRole('button', { name: '编辑' }).click()
-  await expect(page.locator('.arco-modal').getByText('未知角色（legacy-manager）', { exact: true })).toBeVisible()
+  await expect(page.locator('.arco-drawer').getByText('未知角色（legacy-manager）', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '保存' }).last().click()
   await expect(page.getByText('用户信息已更新', { exact: true })).toBeVisible()
 
   expect(updatePayloads).toHaveLength(1)
   expect(updatePayloads[0].roleCodes).toEqual(['auditor', 'legacy-manager'])
+})
+
+test('restores shareable user list state while keeping keyword out of the URL', async ({ page }) => {
+  const listRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('/api/users?'))
+      listRequests.push(request.url())
+  })
+
+  await page.goto('/users?page=2&pageSize=5&status=active&sort=name,asc')
+  await login(page)
+  await page.goto('/users?page=2&pageSize=5&status=active&sort=name,asc')
+  await expect(page.locator('.arco-pagination')).toBeVisible()
+  await expect(page.locator('.arco-table')).toBeVisible()
+  await expect.poll(() => listRequests.some(url => url.includes('page=1') && url.includes('size=5') && url.includes('status=active') && url.includes('sort=name,asc'))).toBe(true)
+
+  await page.getByLabel('关键词').fill('private-name@example.com')
+  await page.getByRole('button', { name: '查询' }).click()
+  await expect.poll(() => page.url()).not.toContain('private-name@example.com')
+  await expect.poll(() => listRequests.some(url => url.includes('keyword=private-name%40example.com'))).toBe(true)
+})
+
+test('resets user page state after filters and page size changes', async ({ page }) => {
+  await login(page)
+  await page.goto('/users?page=2&pageSize=5')
+  await expect(page.locator('.arco-pagination')).toBeVisible()
+
+  await page.locator('#status_input').click()
+  await page.getByText('已停用', { exact: true }).last().click()
+  await page.getByRole('button', { name: '查询' }).click()
+  await expect(page).not.toHaveURL(/page=2/)
+  await expect(page.locator('.arco-table-tr').filter({ hasText: '苏婉' })).toBeVisible()
+})
+
+test('resets the current page when page size changes', async ({ page }) => {
+  await login(page)
+  await page.goto('/users?page=2&pageSize=5')
+  await expect(page.locator('.arco-pagination')).toBeVisible()
+  await page.locator('.arco-pagination-option .arco-select').click()
+  await page.getByText('20 条/页', { exact: true }).click()
+  await expect(page).not.toHaveURL(/page=2/)
+  await expect(page).toHaveURL(/pageSize=20/)
+})
+
+test('opens user details and keeps edit form after field errors', async ({ page }) => {
+  await login(page)
+  await page.goto('/users')
+  const userRow = page.locator('.arco-table-tr').filter({ hasText: '周明' })
+  await userRow.getByRole('button', { name: '查看' }).click()
+  await expect(page.locator('.arco-drawer').getByText('zhou.ming@arco.dev')).toBeVisible()
+  await page.locator('.arco-drawer-close-icon').last().click()
+  await expect(page.locator('.arco-drawer-wrapper').filter({ hasText: '用户详情' })).toHaveCount(0)
+
+  await userRow.getByRole('button', { name: '编辑' }).click()
+  await page.context().addCookies([{ name: 'arco_mock_failure', value: 'user-field-error', url: 'http://127.0.0.1:5173' }])
+  await page.locator('.arco-drawer').getByRole('button', { name: '保存' }).click()
+  await expect(page.locator('.arco-drawer')).toBeVisible()
+  await expect(page.locator('.form-error')).toContainText('请检查用户信息')
+  await expect(page.locator('.arco-drawer').getByText('运营人员', { exact: true })).toBeVisible()
+})
+
+test('creates a user in a drawer and restores the user list after success', async ({ page }) => {
+  const createPayloads: unknown[] = []
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().endsWith('/api/users'))
+      createPayloads.push(request.postDataJSON())
+  })
+  await login(page)
+  await page.goto('/users')
+  await page.getByRole('button', { name: '新增用户' }).click()
+  const drawer = page.locator('.arco-drawer')
+  await drawer.getByLabel('姓名').fill('新用户测试')
+  await drawer.getByLabel('工作邮箱').fill('new-user@arco.dev')
+  await drawer.getByLabel('部门').fill('平台部')
+  await drawer.locator('.arco-select').click()
+  await page.getByText('运营人员', { exact: true }).last().click()
+  await drawer.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('新用户测试')).toBeVisible()
+  expect(createPayloads).toHaveLength(1)
+  expect(createPayloads[0]).toMatchObject({ roleCodes: ['operator'] })
+})
+
+test('keeps user table accessible at 900px and 390px', async ({ page }) => {
+  await login(page)
+  for (const width of [900, 390]) {
+    await page.setViewportSize({ width, height: 800 })
+    await page.goto('/users')
+    await expect(page.getByRole('button', { name: '新增用户' })).toBeVisible()
+    await expect(page.locator('.users-data-table .arco-table-container')).toBeVisible()
+    await expect(page.locator('.user-list-card')).toBeVisible()
+    await page.screenshot({ path: `test-results/users-${width}.png` })
+  }
 })
 
 test('preserves unknown permissions and keeps wildcard permissions read-only', async ({ page }) => {
@@ -313,7 +405,7 @@ test('maps user validation errors back to the form', async ({ page }) => {
   await page.context().addCookies([{ name: 'arco_mock_failure', value: 'user-field-error', url: 'http://127.0.0.1:5173' }])
   await page.getByRole('button', { name: '保存' }).last().click()
 
-  await expect(page.locator('.arco-modal')).toBeVisible()
+  await expect(page.locator('.arco-drawer')).toBeVisible()
   await expect(page.getByText('请选择有效的角色代码')).toBeVisible()
   await expect(page.locator('.form-error')).toContainText('请检查用户信息')
 })

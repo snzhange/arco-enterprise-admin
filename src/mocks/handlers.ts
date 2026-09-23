@@ -124,6 +124,48 @@ function badRequest(detail: string, fieldErrors?: Array<{ field: string, message
   return problemResponse({ title: 'Bad Request', status: 400, detail, fieldErrors }, 400)
 }
 
+type UserSortField = 'name' | 'lastActiveAt'
+type UserSortDirection = 'asc' | 'desc'
+
+interface UserSort {
+  field: UserSortField
+  direction: UserSortDirection
+}
+
+function parseUserSort(searchParams: URLSearchParams): UserSort | undefined {
+  const values = searchParams.getAll('sort')
+  if (values.length === 0)
+    return undefined
+  if (values.length !== 1)
+    throw new Error('用户列表只支持一个 sort 参数')
+
+  const [field, direction, extra] = values[0].split(',')
+  if (
+    extra !== undefined
+    || (field !== 'name' && field !== 'lastActiveAt')
+    || (direction !== 'asc' && direction !== 'desc')
+  ) {
+    throw new Error('sort 仅支持 name 或 lastActiveAt，方向为 asc 或 desc')
+  }
+
+  return { field, direction }
+}
+
+function sortUsers(records: User[], sort?: UserSort): User[] {
+  if (!sort)
+    return records
+
+  const direction = sort.direction === 'asc' ? 1 : -1
+  return [...records].sort((left, right) => {
+    const leftValue = sort.field === 'name' ? left.name : left.lastActiveAt
+    const rightValue = sort.field === 'name' ? right.name : right.lastActiveAt
+    const compared = leftValue.localeCompare(rightValue, 'zh-CN')
+    if (compared !== 0)
+      return compared * direction
+    return left.id.localeCompare(right.id)
+  })
+}
+
 function isValidRoleCodes(roleCodes: unknown, existingUser?: User): roleCodes is string[] {
   if (!Array.isArray(roleCodes) || roleCodes.length === 0 || roleCodes.some(code => typeof code !== 'string'))
     return false
@@ -237,7 +279,22 @@ export const handlers = [
       return unauthorized()
     if (!hasPermission(request, 'users:read'))
       return forbidden()
+    if (getMockFailure(request) === 'users-500') {
+      return problemResponse({
+        title: '服务暂时不可用',
+        status: 500,
+        detail: '用户目录暂时不可用',
+        traceId: 'users-500',
+      }, 500)
+    }
     const url = new URL(request.url)
+    let sort: UserSort | undefined
+    try {
+      sort = parseUserSort(url.searchParams)
+    }
+    catch (error) {
+      return badRequest(error instanceof Error ? error.message : 'sort 参数无效', [{ field: 'sort', message: '请选择 name 或 lastActiveAt 的 asc/desc 排序' }])
+    }
     const page = Math.max(Number(url.searchParams.get('page') || 0), 0)
     const size = Math.min(Math.max(Number(url.searchParams.get('size') || 10), 1), 100)
     const keyword = url.searchParams.get('keyword')?.toLowerCase()
@@ -246,7 +303,7 @@ export const handlers = [
       const matchesKeyword = !keyword || user.name.toLowerCase().includes(keyword) || user.email.toLowerCase().includes(keyword)
       return matchesKeyword && (!status || user.status === status)
     })
-    const content = filtered.slice(page * size, (page + 1) * size)
+    const content = sortUsers(filtered, sort).slice(page * size, (page + 1) * size)
     const response: UserPage = {
       content,
       page,
