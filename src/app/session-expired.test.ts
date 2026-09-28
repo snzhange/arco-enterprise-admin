@@ -32,6 +32,25 @@ describe('session expiry coordinator', () => {
     resetSessionExpired()
     expect(notifySessionExpired(error)).toBe(true)
   })
+
+  it('coalesces notifications while an async handler is pending and can handle again after reset', async () => {
+    let resolveHandler!: () => void
+    const handler = vi.fn(() => new Promise<void>((resolve) => {
+      resolveHandler = resolve
+    }))
+    configureSessionExpiredHandler(handler)
+
+    expect(notifySessionExpired(error)).toBe(true)
+    expect(notifySessionExpired(error)).toBe(false)
+    expect(handler).toHaveBeenCalledOnce()
+
+    resolveHandler()
+    await Promise.resolve()
+    resetSessionExpired()
+
+    expect(notifySessionExpired(error)).toBe(true)
+    expect(handler).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('safe return paths', () => {
