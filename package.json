@@ -19,6 +19,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:coverage:check": "vitest run --coverage",
     "test:watch": "vitest",
     "e2e": "playwright test",
     "generate:api": "orval --config ./orval.config.ts",

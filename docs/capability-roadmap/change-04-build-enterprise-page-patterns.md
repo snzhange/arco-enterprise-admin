@@ -322,5 +322,7 @@ $openspec-propose
 描述的范围创建 change，change id 使用 build-enterprise-page-patterns。
 前置假设是 RBAC 契约和 ApiError 已经稳定。设计采用薄组件与显式页面控制器，
 禁止实现完整 ProTable clone、OpenAPI 自动 UI 或直接绑定 Orval hook 的 DataTable。
+
+不用向我确认分支名，落change之后直接apply，apply完成之后直接archive，archive完成之后提交并合并回main分支
 ```
 

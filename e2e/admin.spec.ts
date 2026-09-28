@@ -236,8 +236,11 @@ test('restores shareable user list state while keeping keyword out of the URL', 
   })
 
   await page.goto('/users?page=2&pageSize=5&status=active&sort=name,asc')
-  await login(page)
-  await page.goto('/users?page=2&pageSize=5&status=active&sort=name,asc')
+  await expect(page).toHaveURL(/\/login$/)
+  await page.getByLabel('工作邮箱').fill('admin@arco.dev')
+  await page.getByLabel('密码').fill('admin1234')
+  await page.getByRole('button', { name: '登录工作台' }).click()
+  await expect(page).toHaveURL(/\/users\?page=2&pageSize=5&status=active&sort=name,asc$/)
   await expect(page.locator('.arco-pagination')).toBeVisible()
   await expect(page.locator('.arco-table')).toBeVisible()
   await expect.poll(() => listRequests.some(url => url.includes('page=1') && url.includes('size=5') && url.includes('status=active') && url.includes('sort=name,asc'))).toBe(true)
@@ -366,6 +369,42 @@ test('keeps invalid credentials on the login page', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/login/)
   await expect(page.getByRole('alert')).toContainText('邮箱或密码错误')
+})
+
+test('switches accounts in one tab without reusing the previous session or user list', async ({ page }) => {
+  const userListRequests: string[] = []
+  const sessionRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.method() !== 'GET')
+      return
+    if (request.url().includes('/api/users?'))
+      userListRequests.push(request.url())
+    if (request.url().endsWith('/api/auth/session'))
+      sessionRequests.push(request.url())
+  })
+
+  await login(page)
+  await page.goto('/users')
+  await expect(page.locator('.user-list-card .arco-table-tr').filter({ hasText: '周明' })).toBeVisible()
+  const previousListRequests = userListRequests.length
+  const previousSessionRequests = sessionRequests.length
+
+  await page.locator('.user-avatar').hover()
+  await page.getByText('退出登录', { exact: true }).click()
+  await expect(page).toHaveURL(/\/login$/)
+
+  await page.getByRole('textbox', { name: '工作邮箱' }).fill('operator@arco.dev')
+  await page.locator('#password_input').fill('operator1234')
+  await page.getByRole('button', { name: '登录工作台' }).click()
+  await expect(page).toHaveURL(/\/dashboard\/workplace$/)
+  await expect(page.locator('.user-avatar')).toHaveText('运')
+  await expect.poll(() => sessionRequests.length).toBeGreaterThan(previousSessionRequests)
+
+  await page.locator('.app-menu').getByText('系统管理', { exact: true }).click()
+  await page.locator('.app-menu').getByText('用户管理', { exact: true }).click()
+  await expect(page.locator('.user-list-card .arco-table-tr').filter({ hasText: '周明' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '新增用户' })).toHaveCount(0)
+  await expect.poll(() => userListRequests.length).toBe(previousListRequests + 1)
 })
 
 test('shows a retryable session failure instead of redirecting on session 500', async ({ page }) => {

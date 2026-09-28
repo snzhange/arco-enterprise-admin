@@ -18,6 +18,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
+      thresholds: {
+        lines: 33,
+        branches: 42,
+      },
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/api/generated/**',

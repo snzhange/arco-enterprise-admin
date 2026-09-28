@@ -29,10 +29,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
-import { getGetCurrentUserQueryKey, useLogout } from '@/api/generated/admin-api'
+import { useLogout } from '@/api/generated/admin-api'
 import { useAuth } from '@/app/auth'
 import { useLocale } from '@/app/i18n'
 import { getNavigationGroup, getNavigationItem, getVisibleNavigationGroups } from '@/app/route-manifest'
+import { clearSessionCache } from '@/app/session-cache'
 import { resetSessionExpired } from '@/app/session-expired'
 import { useAppSettings } from '@/app/settings'
 import { THEME_COLORS } from '@/app/settings/constants'
@@ -63,8 +64,10 @@ export function AppLayout() {
   const logout = useLogout({
     mutation: {
       onSuccess: async () => {
+        if (import.meta.env.VITE_ENABLE_MOCK === 'true')
+          clearMockSession()
+        await clearSessionCache(queryClient)
         resetSessionExpired()
-        await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() })
         navigate('/login', { replace: true })
       },
       onError: () => Message.error('退出失败，请稍后重试'),
@@ -93,12 +96,7 @@ export function AppLayout() {
         if (key === 'workplace')
           navigate('/dashboard/workplace')
         if (key === 'logout') {
-          logout.mutate(undefined, {
-            onSettled: () => {
-              if (import.meta.env.VITE_ENABLE_MOCK === 'true')
-                clearMockSession()
-            },
-          })
+          logout.mutate(undefined)
         }
       }}
     >

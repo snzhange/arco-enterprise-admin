@@ -315,4 +315,6 @@ $openspec-propose
 描述的范围创建 change，change id 使用 codify-page-development-standards。
 以已经落地的 route manifest、ApiError 和企业页面组件为事实基础，
 主要产出中文页面开发指南、仓库入口更新和少量关键视觉回归；不要重新设计组件 API。
+
+不用向我确认分支名，落change之后直接apply，apply完成之后直接archive，archive完成之后提交并合并回main分支
 ```

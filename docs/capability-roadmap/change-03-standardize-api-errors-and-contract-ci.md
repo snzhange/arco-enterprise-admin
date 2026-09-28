@@ -242,4 +242,6 @@ $openspec-propose
 描述的范围创建 change，change id 使用 standardize-api-errors-and-contract-ci。
 重点先明确错误分类和会话 401 策略，再设计 OpenAPI 生成零 diff 与 E2E CI。
 不要在本 change 中提前实现 DataTable、QueryForm 或页面开发规范。
+
+不用向我确认分支名，落change之后直接apply，apply完成之后直接archive，archive完成之后提交并合并回main分支
 ```

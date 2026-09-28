@@ -24,7 +24,7 @@
 
 1. 以 Java 的 `/v3/api-docs` 为真实后端契约；当前示例项目修改 [openapi/admin-api.yaml](../openapi/admin-api.yaml)。先定义 DTO、分页协议和 Problem Details，再执行 `pnpm generate:api`，提交生成的客户端；绝不手改 `src/api/generated`。
 2. 执行 `pnpm check:api` 校验 schema、生成结果零 diff 与类型检查。页面只调用生成的 `use*` hook 和 `get*QueryKey`，不要直接使用 Axios；Axios 只在 [请求层](../src/api/http.ts) 和生成代码中使用。
-3. 页面自己决定筛选、请求 `enabled`、mutation、提交中状态及精确失效的缓存。成功后失效相关资源的生成 query key，例如 `queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() })`；不要无差别清空全部 Query 缓存。页面层捕获 mutation 错误时，遵循请求层的 `errorPolicy`，避免同一错误重复弹窗。
+3. 页面自己决定筛选、请求 `enabled`、mutation、提交中状态及精确失效的缓存。成功后失效相关资源的生成 query key，例如 `queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() })`；普通业务 mutation 不要无差别清空全部 Query 缓存。账号切换是例外：登录成功、退出成功与业务 401 应通过 [clearSessionCache](../src/app/session-cache.ts) 取消进行中的查询并清理所有旧账号缓存。页面层捕获 mutation 错误时，遵循请求层的 `errorPolicy`，避免同一错误重复弹窗。
 4. 服务端列表的 UI 页码从 1 开始，接口 `page` 从 0 开始。`useListQueryState` 暴露 `page`、`pageSize`、`requestPage` 和 `setFilters`/`setSort` 等方法；只把获准分享的非敏感筛选放 URL，姓名、邮箱等关键词留在页面状态。筛选、排序和页大小变更要清空旧行选择。参见 [用户列表实现](../src/pages/UsersPage.tsx)；本地数据过滤和排序无需后端 hook，参见 [查询表格实现](../src/pages/official/SearchTablePage.tsx)。
 5. 生成 hook 已经通过 TanStack Query 向请求层传递 `AbortSignal`；如单独调用生成请求方法，应沿用其 `signal`/`request` 选项，不把被取消请求当网络失败。
 
@@ -90,4 +90,8 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 - [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用。
 - [ ] 纯逻辑单测、请求/权限集成测试、关键正向与异常 E2E 以及必要视觉基线通过；Java 服务端另行验证接口鉴权和数据范围。
 
-本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm build`、`pnpm e2e`；契约变更再执行 `pnpm check:api`。
+本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e`；契约变更再执行 `pnpm check:api`。
+
+覆盖率以 Vitest V8 的 `src` 非生成代码为统计范围，当前基线为 Lines 33.69%、Branches 42.58%，质量门禁暂设 Lines 33%、Branches 42%，后续补齐核心页面测试后再提升。`pnpm test:coverage` 与 CI 的 `pnpm test:coverage:check` 使用同一配置，并生成 text、`coverage/coverage-summary.json` 和 HTML 报告。CI 即使覆盖率失败也会上传 `coverage/` artifact。
+
+组件测试不得复用应用入口的 QueryClient；使用 `src/test/query-client.tsx` 的 `createTestQueryClient` 或 `TestQueryClientProvider`，测试结束取消进行中请求并清理缓存。MSW 的用户、角色和当前身份在测试边界调用 `resetMockStateForTests` 复位，`server.resetHandlers()` 只处理 handler override；同一测试内的登录、角色保存和 sessionStorage 持久化仍应保持有效。页面集成测试覆盖请求参数、缓存失效、权限和失败状态，纯逻辑使用 Vitest，关键用户路径再使用 E2E。

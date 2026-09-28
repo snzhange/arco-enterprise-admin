@@ -1,12 +1,13 @@
 import type { CurrentUser } from '@/api/generated/models'
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AuthProvider } from '@/app/auth'
+import { TestQueryClientProvider } from '@/test/query-client'
 import { UsersPage } from './UsersPage'
 
 const apiMocks = vi.hoisted(() => ({
@@ -35,13 +36,13 @@ const adminUser: CurrentUser = {
 function renderUsersPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={queryClient}>
+    <TestQueryClientProvider client={queryClient}>
       <AuthProvider user={adminUser}>
         <MemoryRouter>
           <UsersPage />
         </MemoryRouter>
       </AuthProvider>
-    </QueryClientProvider>,
+    </TestQueryClientProvider>,
   )
 }
 
@@ -97,11 +98,11 @@ describe('users page role directory states', () => {
   it('does not request the role directory for a read-only user', () => {
     apiMocks.useListRoleOptions.mockReturnValue({ data: undefined, isPending: false, isError: false })
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <TestQueryClientProvider>
         <AuthProvider user={{ ...adminUser, permissions: ['users:read'], roleCodes: ['list-reader'] }}>
           <MemoryRouter><UsersPage /></MemoryRouter>
         </AuthProvider>
-      </QueryClientProvider>,
+      </TestQueryClientProvider>,
     )
 
     expect(apiMocks.useListRoleOptions.mock.calls.some(call => call[0]?.query?.enabled === false)).toBe(true)

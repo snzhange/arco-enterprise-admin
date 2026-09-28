@@ -1,7 +1,7 @@
 # Arco 企业后台能力补齐分析报告
 
-> 分析日期：2026-09-22  
-> 文档性质：只读探索结论与后续 change 导航，不代表功能已经实现  
+> 分析日期：2026-09-22（实施前基线）；状态更新：2026-09-24（见第十节）
+> 文档性质：第 3～9 节保留实施前分析，不能作为当前代码完成状态；第十节记录最新进度
 > 对照项目：`../ant-design-pro`（Ant Design Pro 6.0.3）
 
 ## 1. 背景与目标
@@ -280,3 +280,29 @@ standardize-api-errors-and-contract-ci --> build-enterprise-page-patterns
 每次只处理一个 change。建议在新会话中先运行对应清单末尾提供的 `$openspec-propose` 提示，将清单转换为正式的 proposal、design、spec 和 tasks；审核范围后再进入 `$openspec-apply-change`。
 
 不要在一个 change 中顺手实现后续清单内容。前置 change 出现新的契约决策时，应先更新后续清单或对应 OpenSpec 设计，再开始实现。
+
+## 10. 2026-09-24 实施进度与后续路线
+
+### 10.1 五个 change 的实际状态
+
+| Change | 前端代码与 OpenSpec | 尚需验证或补齐 |
+| --- | --- | --- |
+| 01 `unify-route-manifest` | 已归档；路由、菜单、面包屑和权限守卫使用统一 manifest | 新路由继续按页面开发指南登记并测试 |
+| 02 `normalize-rbac-contracts` | 已归档；前端和 Mock 使用 `roleCodes`、权限目录和数据范围字段 | Java Spring Security 与 Service/Repository 层鉴权、数据范围测试 |
+| 03 `standardize-api-errors-and-contract-ci` | 已归档；`ApiError`、会话过期协调器、`check:api` 与 CI E2E 已接入 | `check:api` 对 staged/untracked 生成文件的本地检查及破坏性契约基线 |
+| 04 `build-enterprise-page-patterns` | 已归档；用户页、本地查询表格和薄页面原语已落地 | [归档任务](../../openspec/changes/archive/2026-09-23-build-enterprise-page-patterns/tasks.md)中的 Java 排序和稳定分页尚未完成；归档时的最终验证项仍未勾选 |
+| 05 `codify-page-development-standards` | 已归档；中文页面指南、Playwright 视觉断言和 Linux CI 基线已接入 | 扩大真实业务页面验证范围，并完善本地非 Linux 视觉测试体验 |
+
+历史清单和本报告第 3～9 节描述的是当时尚未实现的情况。例如 route manifest 和 `DataTable` 现已存在，不应再照搬这些段落作为新的开发任务。已归档表示前端工作已交付，不代表 Java 后端契约自动完成。
+
+### 10.2 会话切换与缓存隔离：已补修
+
+审查发现，退出后立刻在同一标签页登录另一账号时，旧会话查询中的 401 会使新登录再次跳回登录页；仅失效当前用户 query key 也无法隔离用户列表等业务数据。现在登录成功、退出成功以及业务请求触发会话过期时，统一取消进行中的查询并清理全部旧账号缓存，再进入下一会话。Mock 退出成功时同步清除模拟会话；失败时继续保留登录状态。单测覆盖旧查询数据及进行中请求的清理，E2E 覆盖同标签页管理员切换运营账号、重新获取会话和用户列表。普通业务 mutation 仍只失效相关资源的 query key，参见[页面开发指南](../page-development-guide.md#3-openapi请求与缓存)。
+
+### 10.3 下一阶段建议顺序
+
+1. 在 Java 仓库落实用户列表排序白名单、稳定 `id` 并列次序、401/403、角色权限和数据范围契约测试，并与真实 `/v3/api-docs` 联调；这是生产闭环的首要缺口。
+2. 为应用和懒加载页面增加 Error Boundary，覆盖渲染异常、动态 chunk 加载失败及恢复操作。
+3. 增强 `check:api` 对暂存/未跟踪生成文件的检测，按需要引入契约破坏性变更基线；分别保留清晰的前端生成一致性和后端真实契约验证边界。
+4. 以角色管理页和仪表盘继续检验页面原语，补齐业务页国际化、关键操作的键盘/无障碍自动化检查。
+5. 改善 macOS 等本地环境与 Linux 视觉基线的测试分工，再按构建产物优化首屏资源和图像体积。

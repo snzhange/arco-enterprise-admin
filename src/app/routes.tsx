@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Suspense, useEffect } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { toApiError } from '@/api/errors'
-import { getGetCurrentUserQueryKey, useGetCurrentUser } from '@/api/generated/admin-api'
+import { useGetCurrentUser } from '@/api/generated/admin-api'
 import { AuthProvider, useAuth } from '@/app/auth'
 import { LoadingScreen } from '@/app/LoadingScreen'
 import {
@@ -16,6 +16,7 @@ import {
   redirectRouteManifest,
   toNestedRoutePath,
 } from '@/app/route-manifest'
+import { clearSessionCache } from '@/app/session-cache'
 import { configureSessionExpiredHandler, toSafeReturnPath } from '@/app/session-expired'
 import { SessionErrorState } from '@/app/SessionErrorState'
 import { AccessDenied } from '@/components/AccessDenied'
@@ -65,9 +66,8 @@ function SessionExpiredBridge() {
   const queryClient = useQueryClient()
 
   useEffect(() => configureSessionExpiredHandler(async () => {
-    await queryClient.cancelQueries({ queryKey: getGetCurrentUserQueryKey() })
-    queryClient.removeQueries({ queryKey: getGetCurrentUserQueryKey() })
     const from = toSafeReturnPath(`${location.pathname}${location.search}${location.hash}`)
+    await clearSessionCache(queryClient)
     Message.warning('登录状态已过期，请重新登录')
     navigate('/login', { replace: true, state: { from } })
   }), [location.hash, location.pathname, location.search, navigate, queryClient])

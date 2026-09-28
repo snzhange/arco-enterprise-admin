@@ -1,7 +1,7 @@
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { handlers } from './handlers'
+import { handlers, resetMockStateForTests } from './handlers'
 import { MOCK_PERMISSION_OPTIONS, MOCK_ROLE_OPTIONS } from './rbac'
 
 const server = setupServer(...handlers)
@@ -15,10 +15,12 @@ function headers(role = 'admin'): HeadersInit {
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
+  resetMockStateForTests()
   sessionStorage.clear()
 })
 afterEach(() => {
   server.resetHandlers()
+  resetMockStateForTests()
   sessionStorage.clear()
 })
 afterAll(() => server.close())
@@ -161,5 +163,23 @@ describe('rbac mock contracts', () => {
       body: JSON.stringify({ dataScope: 'department', permissions: ['users:read'] }),
     })
     expect(updateResponse.status).toBe(403)
+  })
+
+  it('persists a role update within a test and restores the default snapshot at the boundary', async () => {
+    const updateResponse = await fetch('http://localhost/api/roles/operator', {
+      method: 'PATCH',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataScope: 'all', permissions: ['users:read'] }),
+    })
+    expect(updateResponse.status).toBe(200)
+
+    const rereadResponse = await fetch('http://localhost/api/roles', { headers: headers() })
+    const rereadRoles = await rereadResponse.json() as Array<{ code: string, dataScope: string, permissions: string[] }>
+    expect(rereadRoles.find(role => role.code === 'operator')).toMatchObject({ dataScope: 'all', permissions: ['users:read'] })
+
+    resetMockStateForTests()
+    const restoredResponse = await fetch('http://localhost/api/roles', { headers: headers() })
+    const restoredRoles = await restoredResponse.json() as Array<{ code: string, dataScope: string, permissions: string[] }>
+    expect(restoredRoles.find(role => role.code === 'operator')).toMatchObject({ dataScope: 'department', permissions: ['dashboard:read', 'users:read'] })
   })
 })

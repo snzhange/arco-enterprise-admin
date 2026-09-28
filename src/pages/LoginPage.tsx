@@ -18,11 +18,9 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { applyFieldErrors, getErrorMessage } from '@/api/errors'
-import {
-  getGetCurrentUserQueryKey,
-  useLogin,
-} from '@/api/generated/admin-api'
+import { useLogin } from '@/api/generated/admin-api'
 import { useLocale } from '@/app/i18n'
+import { clearSessionCache } from '@/app/session-cache'
 import { resetSessionExpired, toSafeReturnPath } from '@/app/session-expired'
 import arcoProLoginBanner from '@/assets/arco-pro-login-banner.png'
 import arcoProLogo from '@/assets/arco-pro-logo.svg'
@@ -54,7 +52,6 @@ export function LoginPage() {
   const login = useLogin({
     mutation: {
       onSuccess: async () => {
-        resetSessionExpired()
         if (import.meta.env.VITE_ENABLE_MOCK === 'true') {
           const email = form.getFieldValue('email')
           const role = email === 'operator@arco.dev'
@@ -66,7 +63,8 @@ export function LoginPage() {
                 : 'admin'
           setMockSession(role)
         }
-        await queryClient.invalidateQueries({ queryKey: getGetCurrentUserQueryKey() })
+        await clearSessionCache(queryClient)
+        resetSessionExpired()
         Message.success('登录成功')
         const from = toSafeReturnPath((location.state as { from?: string } | null)?.from)
         navigate(from, { replace: true })

@@ -30,7 +30,11 @@ function hasSession(request?: Request): boolean {
   return typeof document !== 'undefined' && document.cookie.includes(`${AUTH_COOKIE}=1`)
 }
 
-let currentUser: CurrentUser = MOCK_USERS.admin
+const initialUsers = cloneUsers()
+const initialRoles = cloneRoleSummaries()
+const initialCurrentUser = MOCK_USERS.admin
+
+let currentUser: CurrentUser = initialCurrentUser
 
 function getCurrentUser(request?: Request): CurrentUser {
   const role = request?.headers.get('X-Mock-Role') || request?.headers.get('cookie')?.match(/arco_mock_role=([^;]+)/)?.[1]
@@ -76,7 +80,16 @@ function persistRoles(value: RoleSummary[]): void {
 
 const roles: RoleSummary[] = readPersistedRoles()
 
-let users: User[] = cloneUsers()
+let users: User[] = initialUsers.map(user => ({ ...user, roleCodes: [...user.roleCodes] }))
+
+/** Reset mutable MSW state between tests without changing in-test persistence semantics. */
+export function resetMockStateForTests(): void {
+  currentUser = initialCurrentUser
+  users = initialUsers.map(user => ({ ...user, roleCodes: [...user.roleCodes] }))
+  roles.splice(0, roles.length, ...initialRoles.map(role => ({ ...role, permissions: [...role.permissions] })))
+  if (typeof sessionStorage !== 'undefined')
+    sessionStorage.removeItem(ROLE_STORAGE_KEY)
+}
 
 const dashboard: DashboardSummary = {
   activeUsers: 1284,
