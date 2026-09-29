@@ -10,6 +10,7 @@ import {
   APP_SETTINGS_STORAGE_KEY,
   APP_THEME_STORAGE_KEY,
   DEFAULT_SETTINGS,
+  THEME_COLORS,
 } from './constants'
 import { applyTheme } from './theme'
 
@@ -18,7 +19,29 @@ export const AppSettingsContext = createContext<AppSettingsContextValue | undefi
 function readSettings(): AppSettings {
   try {
     const value = localStorage.getItem(APP_SETTINGS_STORAGE_KEY)
-    return value ? { ...DEFAULT_SETTINGS, ...JSON.parse(value) as Partial<AppSettings> } : DEFAULT_SETTINGS
+    if (!value)
+      return DEFAULT_SETTINGS
+
+    const parsed = JSON.parse(value) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+      return DEFAULT_SETTINGS
+
+    const stored = parsed as Partial<Record<keyof AppSettings, unknown>>
+    return {
+      colorWeak: typeof stored.colorWeak === 'boolean' ? stored.colorWeak : DEFAULT_SETTINGS.colorWeak,
+      footer: typeof stored.footer === 'boolean' ? stored.footer : DEFAULT_SETTINGS.footer,
+      menu: typeof stored.menu === 'boolean' ? stored.menu : DEFAULT_SETTINGS.menu,
+      menuWidth: typeof stored.menuWidth === 'number'
+        && Number.isFinite(stored.menuWidth)
+        && stored.menuWidth >= 180
+        && stored.menuWidth <= 320
+        ? stored.menuWidth
+        : DEFAULT_SETTINGS.menuWidth,
+      navbar: typeof stored.navbar === 'boolean' ? stored.navbar : DEFAULT_SETTINGS.navbar,
+      themeColor: typeof stored.themeColor === 'string' && THEME_COLORS.includes(stored.themeColor as typeof THEME_COLORS[number])
+        ? stored.themeColor
+        : DEFAULT_SETTINGS.themeColor,
+    }
   }
   catch {
     return DEFAULT_SETTINGS
