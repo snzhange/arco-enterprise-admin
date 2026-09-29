@@ -23,7 +23,8 @@
 ## 3. OpenAPI、请求与缓存
 
 1. 以 Java 的 `/v3/api-docs` 为真实后端契约；当前示例项目修改 [openapi/admin-api.yaml](../openapi/admin-api.yaml)。先定义 DTO、分页协议和 Problem Details，再执行 `pnpm generate:api`，提交生成的客户端；绝不手改 `src/api/generated`。
-2. 执行 `pnpm check:api` 校验 schema、生成结果零 diff 与类型检查。页面只调用生成的 `use*` hook 和 `get*QueryKey`，不要直接使用 Axios；Axios 只在 [请求层](../src/api/http.ts) 和生成代码中使用。
+2. 执行 `pnpm check:api` 校验 schema、Problem Details、隔离目录中的生成结果零 diff 与类型检查。检查不依赖 Git 的 staged、unstaged 或 untracked 状态；页面只调用生成的 `use*` hook 和 `get*QueryKey`，不要直接使用 Axios；Axios 只在 [请求层](../src/api/http.ts) 和生成代码中使用。
+3. 前端契约 job 只证明 schema 和客户端生成一致性，不覆盖 Java 服务端的 Spring Security 401/403、角色权限、数据范围或真实 `/v3/api-docs`。当前也不启用 breaking-change 检查，直到存在受控版本基线、版本策略和明确阈值；这些条件满足后应单独引入并固定工具版本。
 3. 页面自己决定筛选、请求 `enabled`、mutation、提交中状态及精确失效的缓存。成功后失效相关资源的生成 query key，例如 `queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() })`；普通业务 mutation 不要无差别清空全部 Query 缓存。账号切换是例外：登录成功、退出成功与业务 401 应通过 [clearSessionCache](../src/app/session-cache.ts) 取消进行中的查询并清理所有旧账号缓存。页面层捕获 mutation 错误时，遵循请求层的 `errorPolicy`，避免同一错误重复弹窗。
 4. 服务端列表的 UI 页码从 1 开始，接口 `page` 从 0 开始。`useListQueryState` 暴露 `page`、`pageSize`、`requestPage` 和 `setFilters`/`setSort` 等方法；只把获准分享的非敏感筛选放 URL，姓名、邮箱等关键词留在页面状态。筛选、排序和页大小变更要清空旧行选择。参见 [用户列表实现](../src/pages/UsersPage.tsx)；本地数据过滤和排序无需后端 hook，参见 [查询表格实现](../src/pages/official/SearchTablePage.tsx)。
 5. 生成 hook 已经通过 TanStack Query 向请求层传递 `AbortSignal`；如单独调用生成请求方法，应沿用其 `signal`/`request` 选项，不把被取消请求当网络失败。

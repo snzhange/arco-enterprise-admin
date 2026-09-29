@@ -6,8 +6,12 @@ export default defineConfig({
       target: './openapi/admin-api.yaml',
     },
     output: {
-      target: './src/api/generated/admin-api.ts',
-      schemas: './src/api/generated/models',
+      target: process.env.ORVAL_OUTPUT_ROOT
+        ? './.orval-temp/src/api/generated/admin-api.ts'
+        : './src/api/generated/admin-api.ts',
+      schemas: process.env.ORVAL_OUTPUT_ROOT
+        ? './.orval-temp/src/api/generated/models'
+        : './src/api/generated/models',
       client: 'react-query',
       httpClient: 'axios',
       clean: true,

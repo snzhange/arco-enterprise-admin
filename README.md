@@ -65,7 +65,8 @@ pnpm dev
 2. 将 `orval.config.ts` 的 `input.target` 改为后端地址，例如 `http://localhost:8080/v3/api-docs`。
 3. 执行 `pnpm generate:api`，生成结果写入 `src/api/generated`。
 4. 执行 `pnpm check:api`，校验 OpenAPI、重新生成客户端、检查 `src/api/generated` 零 diff 并运行类型检查。
-   当前前端仓库没有 Java 服务端基线，因此该命令不做跨仓库 breaking-change 比较；Spring Security 的 401/403 和数据范围契约由 Java 仓库测试负责。
+   该命令只代表前端 schema、Problem Details 结构、生成客户端内容和 TypeScript 一致性通过。它不代表 Java 服务端已经验证 Spring Security 的 401/403、角色权限、数据范围或真实 `/v3/api-docs`；这些由 Java 仓库测试负责。
+   当前不启用跨版本 breaking-change 检查，因为仓库没有可复现的 Java `/v3/api-docs` 基线、版本策略和兼容性阈值。获得受控基线后，应通过独立 change 固定工具版本、基线来源和失败阈值，再加入 CI。
 5. 生产环境使用同源网关，让前端请求保持 `/api/...`；本地通过 `VITE_API_PROXY_TARGET` 代理。
 6. 登录接口写入 HttpOnly、Secure、SameSite 会话 Cookie；不要在响应体或 localStorage 返回长期 Token。
 7. Java 的 `Page<T>` 建议映射到契约中的 `content/page/size/totalElements/totalPages`。

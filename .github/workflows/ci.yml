@@ -48,6 +48,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --config.engine-strict=false
       - run: pnpm check:api
+        name: Frontend OpenAPI schema and generated client consistency
 
   e2e:
     runs-on: ubuntu-24.04
