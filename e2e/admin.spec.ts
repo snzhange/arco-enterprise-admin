@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './test-fixtures'
 
 async function login(page: Page) {
   await page.goto('/login')
@@ -257,7 +257,7 @@ test('resets user page state after filters and page size changes', async ({ page
   await expect(page.locator('.arco-pagination')).toBeVisible()
 
   await page.locator('#status_input').click()
-  await page.getByText('已停用', { exact: true }).last().click()
+  await page.getByRole('option', { name: '已停用', exact: true }).click()
   await page.getByRole('button', { name: '查询' }).click()
   await expect(page).not.toHaveURL(/page=2/)
   await expect(page.locator('.arco-table-tr').filter({ hasText: '苏婉' })).toBeVisible()
@@ -304,7 +304,7 @@ test('creates a user in a drawer and restores the user list after success', asyn
   await drawer.getByLabel('工作邮箱').fill('new-user@arco.dev')
   await drawer.getByLabel('部门').fill('平台部')
   await drawer.locator('.arco-select').click()
-  await page.getByText('运营人员', { exact: true }).last().click()
+  await page.getByRole('option', { name: '运营人员', exact: true }).click()
   await drawer.getByRole('button', { name: '保存' }).click()
   await expect(page.getByText('新用户测试')).toBeVisible()
   expect(createPayloads).toHaveLength(1)

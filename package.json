@@ -21,7 +21,10 @@
     "test:coverage": "vitest run --coverage",
     "test:coverage:check": "vitest run --coverage",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "pnpm e2e:functional",
+    "e2e:functional": "playwright test",
+    "e2e:visual": "PLAYWRIGHT_PROJECT=visual playwright test e2e/visual.spec.ts",
+    "e2e:visual:update": "node ./scripts/update-visual-baselines.mjs",
     "generate:api": "orval --config ./orval.config.ts",
     "prepare": "simple-git-hooks"
   },

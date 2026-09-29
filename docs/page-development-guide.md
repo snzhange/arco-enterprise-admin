@@ -91,7 +91,7 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 - [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用。
 - [ ] 纯逻辑单测、请求/权限集成测试、关键正向与异常 E2E 以及必要视觉基线通过；Java 服务端另行验证接口鉴权和数据范围。
 
-本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e`；契约变更再执行 `pnpm check:api`。
+本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e:functional`；视觉回归单独执行 `pnpm e2e:visual`，需要更新 Linux 基线时使用 `pnpm e2e:visual:update` 并审查差异；契约变更再执行 `pnpm check:api`。
 
 覆盖率以 Vitest V8 的 `src` 非生成代码为统计范围，当前基线为 Lines 33.69%、Branches 42.58%，质量门禁暂设 Lines 33%、Branches 42%，后续补齐核心页面测试后再提升。`pnpm test:coverage` 与 CI 的 `pnpm test:coverage:check` 使用同一配置，并生成 text、`coverage/coverage-summary.json` 和 HTML 报告。CI 即使覆盖率失败也会上传 `coverage/` artifact。
 

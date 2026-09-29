@@ -50,7 +50,7 @@ jobs:
       - run: pnpm check:api
         name: Frontend OpenAPI schema and generated client consistency
 
-  e2e:
+  e2e-functional:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --config.engine-strict=false
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm e2e
+      - run: pnpm e2e:functional
         env:
           CI: true
       - name: Upload Playwright diagnostics
@@ -72,6 +72,33 @@ jobs:
         with:
           name: playwright-diagnostics
           path: |
-            playwright-report/
-            test-results/
+            playwright-report/functional/
+            test-results/functional/
+          if-no-files-found: warn
+
+  e2e-visual:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --config.engine-strict=false
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e:visual
+        env:
+          CI: true
+          PLAYWRIGHT_PROJECT: visual
+      - name: Upload visual diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-visual-diagnostics
+          path: |
+            playwright-report/visual/
+            test-results/visual/
           if-no-files-found: warn

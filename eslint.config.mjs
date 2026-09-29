@@ -20,4 +20,10 @@ export default antfu(
       'react-refresh/only-export-components': 'off',
     },
   },
+  {
+    files: ['e2e/**/*.ts'],
+    rules: {
+      'react/rules-of-hooks': 'off',
+    },
+  },
 )
