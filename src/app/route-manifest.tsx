@@ -22,6 +22,7 @@ import {
 } from '@arco-design/web-react/icon'
 
 import { lazy } from 'react'
+import { clearChunkRetryMarker } from '@/app/error-recovery'
 import { LoginPage } from '@/pages/LoginPage'
 import { canAccess } from './permissions'
 import { PERMISSIONS } from './permissions.constants'
@@ -39,6 +40,7 @@ export type {
 export function lazyNamed<T extends ComponentType>(loader: () => Promise<unknown>, exportName: string): LazyExoticComponent<T> {
   return lazy(async () => {
     const module = await loader() as Record<string, unknown>
+    clearChunkRetryMarker()
     const component = module[exportName]
     if (typeof component !== 'function')
       throw new Error(`Route component export "${exportName}" was not found`)

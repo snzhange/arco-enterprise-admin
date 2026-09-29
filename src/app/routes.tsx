@@ -8,6 +8,7 @@ import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react
 import { toApiError } from '@/api/errors'
 import { useGetCurrentUser } from '@/api/generated/admin-api'
 import { AuthProvider, useAuth } from '@/app/auth'
+import { RouteErrorBoundary } from '@/app/ErrorBoundary'
 import { LoadingScreen } from '@/app/LoadingScreen'
 import {
   canAccessRoute,
@@ -31,11 +32,13 @@ function PermissionRoute({ children, match }: { children: ReactNode, match: Rout
 function ManifestPage({ match }: { match: RouteMatch }) {
   const Page = match.route.component
   return (
-    <LazyPage>
-      <PermissionRoute match={match}>
-        <Page />
-      </PermissionRoute>
-    </LazyPage>
+    <RouteErrorBoundary>
+      <LazyPage>
+        <PermissionRoute match={match}>
+          <Page />
+        </PermissionRoute>
+      </LazyPage>
+    </RouteErrorBoundary>
   )
 }
 

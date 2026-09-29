@@ -6,6 +6,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { httpClient } from './api/http'
+import { RootErrorBoundary } from './app/ErrorBoundary'
 import { AppRoutes } from './app/routes'
 import { AppSettingsProvider, useAppSettings } from './app/settings'
 import '@arco-design/web-react/dist/css/arco.css'
@@ -54,11 +55,13 @@ async function bootstrap() {
   }
 
   createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <AppSettingsProvider>
-        <ConfiguredApplication />
-      </AppSettingsProvider>
-    </StrictMode>,
+    <RootErrorBoundary>
+      <StrictMode>
+        <AppSettingsProvider>
+          <ConfiguredApplication />
+        </AppSettingsProvider>
+      </StrictMode>
+    </RootErrorBoundary>,
   )
 }
 
