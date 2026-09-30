@@ -309,4 +309,4 @@ standardize-api-errors-and-contract-ci --> build-enterprise-page-patterns
 
 ### 10.4 2026-09-30 质量提升 change 执行状态
 
-质量提升拆为 `cover-supported-official-pages`、`verify-linux-e2e-and-visual-regressions`、`enforce-directory-coverage-trends` 三项，后续扩展为官方剩余页面和 E2E 稳定性 change。首批覆盖已将全局 Lines 覆盖率由 72.46% 提升到 79.09%，`src/pages/official` Lines 从 26.87% 提升至当前基线 48.45%；Monitor、UserInfo、UserSetting、BasicProfile 和结果页行为测试已补齐，DataAnalysis/MultiDimension 明确保持展示示例分类。页面暂无真实 API 的失败恢复不在单测中虚构，交由 E2E/契约层验证。精确任务进度以 OpenSpec change 状态为准。
+质量提升拆为 `cover-supported-official-pages`、`verify-linux-e2e-and-visual-regressions`、`enforce-directory-coverage-trends` 三项，后续扩展为官方剩余页面和 E2E 稳定性 change。首批覆盖已将全局 Lines 覆盖率由 72.46% 提升到 79.09%，`src/pages/official` Lines 从 26.87% 提升至当前基线 48.45%；Monitor、UserInfo、UserSetting、BasicProfile 和结果页行为测试已补齐，DataAnalysis/MultiDimension 明确保持展示示例分类。Playwright fixture 现在统一收集未预期 page/console 错误和 React key 警告，功能与视觉报告按目录隔离；本机功能 E2E 26/26 通过，Linux 视觉快照仍只在固定 CI 环境更新，本机 `e2e:check-env` 因 macOS/Node 24 不匹配 Linux/Node 22 基线而按预期失败。页面暂无真实 API 的失败恢复不在单测中虚构，交由 E2E/契约层验证。精确任务进度以 OpenSpec change 状态为准。

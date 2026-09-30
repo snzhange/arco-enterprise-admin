@@ -26,6 +26,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm test -- --run
       - run: pnpm test:coverage:check
+      - run: node ./scripts/check-coverage-directories.mjs
       - run: pnpm build
       - run: pnpm build:report
       - run: pnpm check:budgets
@@ -42,6 +43,13 @@ jobs:
         with:
           name: coverage-summary
           path: coverage/coverage-summary.json
+          if-no-files-found: warn
+      - name: Upload directory coverage trend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-directories
+          path: coverage/coverage-directories.json
           if-no-files-found: warn
       - name: Upload build asset report
         if: always()
@@ -79,9 +87,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --config.engine-strict=false
       - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e:check-env
       - run: pnpm e2e:functional
         env:
           CI: true
+      - run: pnpm e2e:check-artifacts
+        if: always()
       - name: Upload Playwright diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -105,9 +116,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --config.engine-strict=false
       - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e:check-env
       - run: pnpm e2e:visual
         env:
           CI: true
+          PLAYWRIGHT_PROJECT: visual
+      - run: pnpm e2e:check-artifacts
+        if: always()
+        env:
           PLAYWRIGHT_PROJECT: visual
       - name: Upload visual diagnostics
         if: always()

@@ -91,8 +91,12 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 - [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用。
 - [ ] 纯逻辑单测、请求/权限集成测试、关键正向与异常 E2E 以及必要视觉基线通过；Java 服务端另行验证接口鉴权和数据范围。
 
-本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e:functional`；视觉回归单独执行 `pnpm e2e:visual`，需要更新 Linux 基线时使用 `pnpm e2e:visual:update` 并审查差异；契约变更再执行 `pnpm check:api`。
+本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e:functional`；Playwright fixture 会把未预期的 page error、console error 和 React key 警告作为失败证据。视觉回归单独执行 `pnpm e2e:visual`，需要更新 Linux 基线时使用 `pnpm e2e:visual:update` 并审查差异；macOS 本地不能替代 Linux 快照环境，不能直接更新基线，`pnpm e2e:check-env` 在非 Linux/Node 22 环境失败属于预期；契约变更再执行 `pnpm check:api`。
+
+E2E 运行前可执行 `pnpm e2e:check-env` 检查 Linux、Node 主版本、Playwright 项目、视口和缩放基线。普通 `e2e:functional`/`e2e:visual` 不更新快照；快照只能通过 Linux 环境中的 `pnpm e2e:visual:update` 显式更新并审查差异。
 
 覆盖率以 Vitest V8 的 `src` 非生成代码为统计范围，当前基线为 Lines 72.46%、Branches 72.03%、Functions 62.35%；质量门禁为 Lines 70%、Branches 68%、Statements 68%、Functions 60%。目录和页面分类、剩余风险见 [质量与覆盖率基线](quality-coverage-baseline.md)。`pnpm test:coverage` 与 CI 的 `pnpm test:coverage:check` 使用同一配置，并生成 text、`coverage/coverage-summary.json` 和 HTML 报告。CI 即使覆盖率失败也会上传 `coverage/` artifact。
 
 组件测试不得复用应用入口的 QueryClient；使用 `src/test/query-client.tsx` 的 `createTestQueryClient` 或 `TestQueryClientProvider`，测试结束取消进行中请求并清理缓存。MSW 的用户、角色和当前身份在测试边界调用 `resetMockStateForTests` 复位，`server.resetHandlers()` 只处理 handler override；同一测试内的登录、角色保存和 sessionStorage 持久化仍应保持有效。页面集成测试覆盖请求参数、缓存失效、权限和失败状态，纯逻辑使用 Vitest，关键用户路径再使用 E2E。
+
+官方展示页的当前路由分类和逐页测试边界见[官方页面覆盖矩阵](official-page-coverage-matrix.md)。正式支持页面必须补齐适用的加载、成功、空、错误、权限和主要操作恢复路径；示例页可由视觉基线和隔离渲染测试验收，不得通过 coverage exclude 隐藏缺口。增加或改变 manifest 页面时同步更新矩阵。

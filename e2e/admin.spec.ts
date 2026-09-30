@@ -60,8 +60,6 @@ test('automatically collapses the sider below the xl breakpoint', async ({ page 
 
 test('opens every official Arco Design Pro route', async ({ page }) => {
   test.setTimeout(60_000)
-  const errors: string[] = []
-  page.on('pageerror', error => errors.push(error.message))
   await login(page)
 
   const groups = [
@@ -89,8 +87,6 @@ test('opens every official Arco Design Pro route', async ({ page }) => {
       await expect(page.locator('.app-content')).not.toBeEmpty()
     }
   }
-
-  expect(errors).toEqual([])
 })
 
 test('preserves redirects, hidden routes, 404 fallback and breadcrumb metadata', async ({ page }) => {

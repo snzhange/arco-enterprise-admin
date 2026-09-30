@@ -1,16 +1,17 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isVisual = process.env.PLAYWRIGHT_PROJECT === 'visual'
+const isCI = Boolean(process.env.CI)
 
 export default defineConfig({
   testDir: './e2e',
   testMatch: isVisual ? /visual\.spec\.ts/ : /admin\.spec\.ts/,
   fullyParallel: !isVisual,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  retries: isCI ? 2 : 0,
+  workers: isCI ? 2 : undefined,
   timeout: 30_000,
-  reporter: process.env.CI
+  reporter: isCI
     ? [['github'], ['html', { outputFolder: isVisual ? 'playwright-report/visual' : 'playwright-report/functional', open: 'never' }]]
     : [['list'], ['html', { outputFolder: isVisual ? 'playwright-report/visual' : 'playwright-report/functional', open: 'never' }]],
   outputDir: isVisual ? 'test-results/visual' : 'test-results/functional',
