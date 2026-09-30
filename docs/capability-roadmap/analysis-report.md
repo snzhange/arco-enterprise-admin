@@ -306,3 +306,7 @@ standardize-api-errors-and-contract-ci --> build-enterprise-page-patterns
 3. 增强 `check:api` 对暂存/未跟踪生成文件的检测，按需要引入契约破坏性变更基线；分别保留清晰的前端生成一致性和后端真实契约验证边界。
 4. 以角色管理页和仪表盘继续检验页面原语，补齐业务页国际化、关键操作的键盘/无障碍自动化检查。
 5. 改善 macOS 等本地环境与 Linux 视觉基线的测试分工，再按构建产物优化首屏资源和图像体积。
+
+### 10.4 2026-09-30 质量提升 change 执行状态
+
+质量提升拆为 `cover-supported-official-pages`、`verify-linux-e2e-and-visual-regressions`、`enforce-directory-coverage-trends` 三项，后续扩展为官方剩余页面和 E2E 稳定性 change。首批覆盖已将全局 Lines 覆盖率由 72.46% 提升到 79.09%，`src/pages/official` Lines 从 26.87% 提升至当前基线 48.45%；Monitor、UserInfo、UserSetting、BasicProfile 和结果页行为测试已补齐，DataAnalysis/MultiDimension 明确保持展示示例分类。页面暂无真实 API 的失败恢复不在单测中虚构，交由 E2E/契约层验证。精确任务进度以 OpenSpec change 状态为准。

@@ -146,10 +146,10 @@ function StudioCard() {
 function DataStatisticCard() {
   const columns = [
     { title: '序号', render: (_: unknown, _record: unknown, index: number) => index + 1, width: 64 },
-    { title: '封面', dataIndex: 'name', render: () => <div className="carousel-cover"><Tag color="red">审核失败</Tag></div> },
-    { title: '名称', dataIndex: 'name' },
-    { title: '时长', dataIndex: 'duration' },
-    { title: 'ID', dataIndex: 'id' },
+    { title: '封面', key: 'cover', dataIndex: 'name', render: () => <div className="carousel-cover"><Tag color="red">审核失败</Tag></div> },
+    { title: '名称', key: 'name', dataIndex: 'name' },
+    { title: '时长', key: 'duration', dataIndex: 'duration' },
+    { title: 'ID', key: 'id', dataIndex: 'id' },
   ]
   return (
     <Card className="pro-card monitor-data-card">
