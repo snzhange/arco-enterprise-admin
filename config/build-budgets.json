@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "budgets": {
+    "entryGzipBytes": 240000,
+    "maxJavaScriptGzipBytes": 180000,
+    "maxCssGzipBytes": 90000,
+    "maxMediaBytes": 300000,
+    "maxMediaGzipBytes": 300000,
+    "maxTotalMediaBytes": 800000,
+    "maxSourceMediaBytes": 300000,
+    "maxSourceMediaGzipBytes": 300000
+  },
+  "baseline": "./config/build-assets-baseline.json"
+}

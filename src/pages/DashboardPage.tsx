@@ -280,9 +280,15 @@ function WorkplaceCarouselCard() {
   return (
     <Card className="pro-card workplace-carousel-card">
       <Carousel indicatorType="slider" showArrow="never" autoPlay>
-        {workplaceCarouselImages.map(image => (
+        {workplaceCarouselImages.map((image, index) => (
           <div key={image}>
-            <img src={image} alt="" />
+            <img
+              src={image}
+              alt=""
+              loading={index === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              {...(index === 0 ? { fetchpriority: 'high' } : {})}
+            />
           </div>
         ))}
       </Carousel>

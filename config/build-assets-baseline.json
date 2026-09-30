@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-30T07:04:53.476Z",
+  "metrics": {
+    "fileCount": 54,
+    "javascriptGzipBytes": 398751,
+    "cssGzipBytes": 74251,
+    "mediaBytes": 766689,
+    "mediaGzipBytes": 764847,
+    "entryGzipBytes": 234412,
+    "entryFiles": [
+      "assets/index-CF87dqGd.js",
+      "assets/index-Rs2_Xmf9.css"
+    ],
+    "maxJavaScriptGzipBytes": 160161,
+    "maxCssGzipBytes": 74251,
+    "maxMediaBytes": 221652,
+    "maxMediaGzipBytes": 221740
+  },
+  "sourceMetrics": {
+    "fileCount": 7,
+    "javascriptGzipBytes": 0,
+    "cssGzipBytes": 0,
+    "mediaBytes": 779746,
+    "mediaGzipBytes": 777927,
+    "entryGzipBytes": 0,
+    "entryFiles": [],
+    "maxJavaScriptGzipBytes": 0,
+    "maxCssGzipBytes": 0,
+    "maxMediaBytes": 221652,
+    "maxMediaGzipBytes": 221740
+  }
+}
