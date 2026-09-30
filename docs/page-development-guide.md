@@ -93,6 +93,6 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 
 本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e:functional`；视觉回归单独执行 `pnpm e2e:visual`，需要更新 Linux 基线时使用 `pnpm e2e:visual:update` 并审查差异；契约变更再执行 `pnpm check:api`。
 
-覆盖率以 Vitest V8 的 `src` 非生成代码为统计范围，当前基线为 Lines 33.69%、Branches 42.58%，质量门禁暂设 Lines 33%、Branches 42%，后续补齐核心页面测试后再提升。`pnpm test:coverage` 与 CI 的 `pnpm test:coverage:check` 使用同一配置，并生成 text、`coverage/coverage-summary.json` 和 HTML 报告。CI 即使覆盖率失败也会上传 `coverage/` artifact。
+覆盖率以 Vitest V8 的 `src` 非生成代码为统计范围，当前基线为 Lines 72.46%、Branches 72.03%、Functions 62.35%；质量门禁为 Lines 70%、Branches 68%、Statements 68%、Functions 60%。目录和页面分类、剩余风险见 [质量与覆盖率基线](quality-coverage-baseline.md)。`pnpm test:coverage` 与 CI 的 `pnpm test:coverage:check` 使用同一配置，并生成 text、`coverage/coverage-summary.json` 和 HTML 报告。CI 即使覆盖率失败也会上传 `coverage/` artifact。
 
 组件测试不得复用应用入口的 QueryClient；使用 `src/test/query-client.tsx` 的 `createTestQueryClient` 或 `TestQueryClientProvider`，测试结束取消进行中请求并清理缓存。MSW 的用户、角色和当前身份在测试边界调用 `resetMockStateForTests` 复位，`server.resetHandlers()` 只处理 handler override；同一测试内的登录、角色保存和 sessionStorage 持久化仍应保持有效。页面集成测试覆盖请求参数、缓存失效、权限和失败状态，纯逻辑使用 Vitest，关键用户路径再使用 E2E。

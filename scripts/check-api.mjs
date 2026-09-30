@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -70,10 +70,18 @@ try {
   assertProblemResponses(result.specification)
   temporaryWorkspace = await mkdtemp(path.join(os.tmpdir(), 'arco-api-check-'))
   const generatedOutput = path.join(process.cwd(), '.orval-temp', generatedPath)
-  execFileSync('pnpm', ['exec', 'orval', '--config', './orval.config.ts'], {
-    stdio: 'inherit',
+  const orvalResult = spawnSync('pnpm', ['exec', 'orval', '--config', './orval.config.ts'], {
+    encoding: 'utf8',
     env: { ...process.env, ORVAL_OUTPUT_ROOT: temporaryWorkspace },
   })
+  if (orvalResult.error)
+    throw orvalResult.error
+  const meaningfulOutput = `${orvalResult.stdout || ''}\n${orvalResult.stderr || ''}`
+    .replace(/▲ \[WARNING\] "import\.meta"[\s\S]*?(?=▲ \[WARNING\]|$)/g, '')
+  if (meaningfulOutput.trim())
+    process.stdout.write(meaningfulOutput)
+  if (orvalResult.status !== 0)
+    throw new Error(`Orval 生成失败，退出码 ${orvalResult.status}`)
   const generatedFile = path.join(generatedOutput, 'admin-api.ts')
   const generatedSource = await readFile(generatedFile, 'utf8')
   await writeFile(generatedFile, generatedSource.replaceAll('../../../../src/api/http', '../http'))
