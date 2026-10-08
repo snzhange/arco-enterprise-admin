@@ -20,6 +20,9 @@ export default defineConfig({
       animations: 'disabled',
       caret: 'hide',
       scale: 'css',
+      // 项目名已包含运行环境（chromium-linux），不要再追加 Playwright 的平台后缀。
+      // 这样沿用仓库中已有的 *-chromium-linux.png 基准图，避免生成 *-chromium-linux-linux.png。
+      pathTemplate: '{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg}{-projectName}{ext}',
       maxDiffPixelRatio: 0.01,
     },
   },
