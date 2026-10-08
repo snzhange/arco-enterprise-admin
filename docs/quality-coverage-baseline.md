@@ -1,18 +1,20 @@
 # 质量与覆盖率基线
 
-## 当前基线
+## 当前实测
 
-基于 `pnpm test:coverage:check` 的 V8 报告（2026-09-30，补齐官方页面首批行为测试后）：
+以下是 `pnpm test:coverage:directories` 在 2026-10-08 生成的当前工作区快照，包含本轮官方页面行为测试。提交后的实际门禁结果以 CI 重新生成的报告为准：
 
-| 范围 | Lines | Branches | Functions |
-| --- | ---: | ---: | ---: |
-| 全部纳入源码 | 79.09% | 75.53% | 69.97% |
-| `src/app` | 90.40% | 81.73% | 71.91% |
-| `src/components` | 79.76% | 70.68% | 61.11% |
-| `src/pages`（不含子目录） | 85.62% | 76.04% | 88.79% |
-| `src/pages/official` | 48.45% | 53.09% | 37.61% |
+| 范围 | Lines | Statements | Branches | Functions |
+| --- | ---: | ---: | ---: | ---: |
+| 全部纳入源码 | 85.72% | 83.97% | 77.90% | 78.75% |
+| `src/app` | 90.40% | 82.82% | 81.73% | 71.91% |
+| `src/components` | 79.76% | 77.91% | 70.69% | 61.11% |
+| `src/pages`（不含子目录） | 85.62% | 86.15% | 76.04% | 88.79% |
+| `src/pages/official` | 80.18% | 79.75% | 69.91% | 72.48% |
 
-统计范围是 `src/**/*.{ts,tsx}`，排除生成 API、应用入口、mock 和测试基础设施。当前门槛为 Lines 70%、Branches 68%、Statements 68%、Functions 60%。
+统计范围是 `src/**/*.{ts,tsx}`，排除生成 API、应用入口、mock 和测试基础设施。全局门槛为 Lines 70%、Branches 68%、Statements 68%、Functions 60%。目录门槛和允许回退幅度由 `config/coverage-directories.json` 管理。
+
+`config/coverage-baseline.json` 中的 2026-09-30 数值是目录趋势比较基线，用于检测回退，不等同于上表的当前实测值；官方页面补测后，`src/pages/official` 的实测覆盖率已明显高于该历史基线。
 
 目录门槛配置见 `config/coverage-directories.json`，基线见 `config/coverage-baseline.json`。`pnpm test:coverage:directories` 会生成 `coverage/coverage-directories.json`，报告各目录四项指标、基线差异、目标值和门禁状态。
 
@@ -26,4 +28,4 @@
 
 ## 剩余风险
 
-`src/pages/official` 和 `SettingsDrawer` 仍是主要覆盖率缺口；Monitor、UserInfo、UserSetting、BasicProfile 和结果页已补充共置行为测试，DataAnalysis/MultiDimension 保持展示示例分类并由视觉回归或隔离渲染验收。页面没有真实 API 的失败恢复由 E2E/契约层负责，不能用单元测试虚构后端错误。后续应优先补齐高风险交互，再根据目录趋势逐步提升门槛。测试不得通过扩大排除范围来掩盖正式业务代码缺口。
+`src/pages/official` 的正式支持页面已补齐大部分共置行为测试，但 DataAnalysis/MultiDimension 仍是展示示例，StepForm 和 `SettingsDrawer` 仍有较低的函数覆盖率；这些页面应按实际风险继续补充测试。Monitor、UserInfo、UserSetting、BasicProfile、结果页、CardList、GroupForm 和异常页已有共置行为测试。页面没有真实 API 的失败恢复由 E2E/契约层负责，不能用单元测试虚构后端错误。后续应优先补齐高风险交互，再根据目录趋势逐步提升门槛。测试不得通过扩大排除范围来掩盖正式业务代码缺口。

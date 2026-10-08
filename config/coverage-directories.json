@@ -1,0 +1,9 @@
+{
+  "baseline": "config/coverage-baseline.json",
+  "directories": [
+    { "name": "app", "path": "src/app", "thresholds": { "lines": 84, "statements": 80, "branches": 76, "functions": 70 }, "maxRegression": 2 },
+    { "name": "components", "path": "src/components", "thresholds": { "lines": 75, "statements": 72, "branches": 68, "functions": 55 }, "maxRegression": 2 },
+    { "name": "pages", "path": "src/pages", "thresholds": { "lines": 84, "statements": 82, "branches": 74, "functions": 84 }, "maxRegression": 2 },
+    { "name": "official", "path": "src/pages/official", "thresholds": { "lines": 45, "statements": 43, "branches": 48, "functions": 34 }, "maxRegression": 3 }
+  ]
+}

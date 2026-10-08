@@ -1,6 +1,8 @@
 # Change 03：standardize-api-errors-and-contract-ci 落地清单
 
-> 建议 OpenSpec change ID：`standardize-api-errors-and-contract-ci`  
+> 文档性质：历史设计与实施记录。该 change 已归档；当前请求错误语义以 `src/api/errors.ts`、`src/api/http.ts`、`pnpm check:api` 和[页面开发指南](../page-development-guide.md)为准。本文件中的未勾选项保留原始规划，不代表当前待办。
+
+> 原 OpenSpec change ID：`standardize-api-errors-and-contract-ci`
 > 优先级：P0  
 > 建议依赖：`normalize-rbac-contracts`  
 > 目标：统一请求错误语义，并让 OpenAPI、生成客户端和关键 E2E 进入 CI 门禁

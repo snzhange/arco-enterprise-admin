@@ -1,6 +1,8 @@
 # Change 01：unify-route-manifest 落地清单
 
-> 建议 OpenSpec change ID：`unify-route-manifest`  
+> 文档性质：历史设计与实施记录。该 change 已归档；当前路由、菜单和权限事实来源是 `src/app/route-manifest.tsx` 及[页面开发指南](../page-development-guide.md)。本文件中的未勾选项保留原始规划，不代表当前待办。
+
+> 原 OpenSpec change ID：`unify-route-manifest`
 > 优先级：P0  
 > 依赖：无  
 > 目标：用一份 route manifest 驱动路由、菜单、面包屑和路由权限守卫
@@ -210,4 +212,3 @@ $openspec-propose
 先核对当前路由、菜单和权限实现，以清单为范围上限，不包含 RBAC DTO、
 统一错误处理或企业页面组件。
 ```
-

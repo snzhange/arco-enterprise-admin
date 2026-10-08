@@ -1,6 +1,8 @@
 # Change 02：normalize-rbac-contracts 落地清单
 
-> 建议 OpenSpec change ID：`normalize-rbac-contracts`  
+> 文档性质：历史设计与实施记录。该 change 已归档；当前权限模型以[权限说明](../authorization.md)、OpenAPI 契约和 `src/app/permissions.constants.ts` 为准。本文件中的未勾选项保留原始规划，不代表当前待办。
+
+> 原 OpenSpec change ID：`normalize-rbac-contracts`
 > 优先级：P0  
 > 建议依赖：`unify-route-manifest`  
 > 目标：统一角色代码、权限目录、用户角色分配和数据范围契约
@@ -241,4 +243,3 @@ $openspec-propose
 先确认 roleCodes、角色选项目录和权限目录三个契约决策；OpenAPI 先行，
 生成目录只能通过 pnpm generate:api 更新。不要包含统一错误框架或通用 CRUD 组件。
 ```
-

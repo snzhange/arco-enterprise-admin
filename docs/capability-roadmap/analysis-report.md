@@ -1,6 +1,6 @@
 # Arco 企业后台能力补齐分析报告
 
-> 分析日期：2026-09-22（实施前基线）；状态更新：2026-09-24（见第十节）
+> 分析日期：2026-09-22（实施前基线）；状态更新：2026-10-08（见第十节）
 > 文档性质：第 3～9 节保留实施前分析，不能作为当前代码完成状态；第十节记录最新进度
 > 对照项目：`../ant-design-pro`（Ant Design Pro 6.0.3）
 
@@ -307,6 +307,12 @@ standardize-api-errors-and-contract-ci --> build-enterprise-page-patterns
 4. 以角色管理页和仪表盘继续检验页面原语，补齐业务页国际化、关键操作的键盘/无障碍自动化检查。
 5. 改善 macOS 等本地环境与 Linux 视觉基线的测试分工，再按构建产物优化首屏资源和图像体积。
 
-### 10.4 2026-09-30 质量提升 change 执行状态
+### 10.4 2026-09-30 质量提升 change 执行状态（历史快照）
 
 质量提升拆为 `cover-supported-official-pages`、`verify-linux-e2e-and-visual-regressions`、`enforce-directory-coverage-trends` 三项，后续扩展为官方剩余页面和 E2E 稳定性 change。首批覆盖已将全局 Lines 覆盖率由 72.46% 提升到 79.09%，`src/pages/official` Lines 从 26.87% 提升至当前基线 48.45%；Monitor、UserInfo、UserSetting、BasicProfile 和结果页行为测试已补齐，DataAnalysis/MultiDimension 明确保持展示示例分类。Playwright fixture 现在统一收集未预期 page/console 错误和 React key 警告，功能与视觉报告按目录隔离；本机功能 E2E 26/26 通过，Linux 视觉快照仍只在固定 CI 环境更新，本机 `e2e:check-env` 因 macOS/Node 24 不匹配 Linux/Node 22 基线而按预期失败。页面暂无真实 API 的失败恢复不在单测中虚构，交由 E2E/契约层验证。精确任务进度以 OpenSpec change 状态为准。
+
+### 10.5 2026-10-08 工作区复核
+
+当前工作区的 V8 覆盖率报告为全局 Lines 85.72%、Statements 83.97%、Branches 77.90%、Functions 78.75%；`src/pages/official` 为 Lines 80.18%、Statements 79.75%、Branches 69.91%、Functions 72.48%。这些数值已同步到[质量与覆盖率基线](../quality-coverage-baseline.md)，2026-09-30 的目录基线仍保留在 `config/coverage-baseline.json` 中用于趋势回退比较。
+
+截至本次复核，`cover-supported-official-pages`、`verify-linux-e2e-and-visual-regressions` 和 `enforce-directory-coverage-trends` 已完成；`stabilize-e2e-table-keys-and-linux-visuals` 仍有 Linux CI 验证任务，后端安全与分页契约 change 尚未形成执行任务。前端单测和 Mock 通过不替代 Java 服务端的 401/403、角色权限、数据范围和真实 `/v3/api-docs` 联调验证。

@@ -1,6 +1,8 @@
 # Change 04：build-enterprise-page-patterns 落地清单
 
-> 建议 OpenSpec change ID：`build-enterprise-page-patterns`  
+> 文档性质：历史设计与实施记录。该 change 已归档；当前页面原语和组合方式以 `src/components/`、实际页面和[页面开发指南](../page-development-guide.md)为准。本文件中的未勾选项保留原始规划，不代表当前待办。
+
+> 原 OpenSpec change ID：`build-enterprise-page-patterns`
 > 优先级：P1  
 > 依赖：`normalize-rbac-contracts`、`standardize-api-errors-and-contract-ci`  
 > 目标：建立适配 Arco + Orval + TanStack Query 的企业列表页和 CRUD 薄组件模式
@@ -325,4 +327,3 @@ $openspec-propose
 
 不用向我确认分支名，落change之后直接apply，apply完成之后直接archive，archive完成之后提交并合并回main分支
 ```
-

@@ -1,0 +1,9 @@
+{
+  "generatedAt": "2026-09-30",
+  "directories": {
+    "app": { "lines": 90.4, "statements": 82.81, "branches": 81.73, "functions": 71.91 },
+    "components": { "lines": 79.76, "statements": 77.9, "branches": 70.68, "functions": 61.11 },
+    "pages": { "lines": 85.62, "statements": 86.15, "branches": 76.03, "functions": 88.78 },
+    "official": { "lines": 48.45, "statements": 49.17, "branches": 53.09, "functions": 37.61 }
+  }
+}

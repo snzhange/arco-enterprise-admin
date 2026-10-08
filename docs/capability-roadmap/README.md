@@ -1,5 +1,7 @@
 # 企业后台能力补齐路线图
 
+> 文档性质：历史路线图和实施记录。当前新项目入口是[新后台搭建指南](../arco-admin-new-project-guide.md)，日常页面规则以[页面开发指南](../page-development-guide.md)为准。
+
 本目录将 `docs/ant-design-pro-vs-arco.md` 第 9 节的方向性建议，整理为一份分析报告和五个 change 落地清单。分析报告的前九节记录 2026-09-22 实施前基线，[第十节](./analysis-report.md#10-2026-09-24-实施进度与后续路线)记录最新状态和后续工作；2026-09-30 起的质量改进 change 与逐路由覆盖情况以本仓库活动 OpenSpec 和[质量覆盖率基线](../quality-coverage-baseline.md)为准。
 
 ## 阅读顺序
@@ -16,7 +18,7 @@
 - 五项 OpenSpec change 均已归档，路由、前端 RBAC、API 错误处理、页面原语和开发指南均已落地；下方清单保留当时的设计和交接内容，不能再作为“尚未实现”的状态依据。
 - 2026-09-24 补修了同标签页退出后换账号会重回登录页的问题；登录成功、退出成功和业务 401 现在会取消进行中的查询并清空旧账号缓存。同标签页切换账号及新账号重新请求用户列表已有单测和 E2E 覆盖。
 - 仍未完成的主要工作是 Java 服务端排序、鉴权与数据范围契约测试，以及真实 `/v3/api-docs` 联调。前端 OpenAPI、Mock 和 Playwright 的通过不等于服务端已落实这些约束。
-- 新一轮质量改进拆分为三个顺序执行的 OpenSpec change：`cover-supported-official-pages`、`verify-linux-e2e-and-visual-regressions`、`enforce-directory-coverage-trends`。官方页面逐路由分类见[覆盖矩阵](../official-page-coverage-matrix.md)；实现中的任务状态以 `openspec list --json` 为准。
+- 截至 2026-10-08，`cover-supported-official-pages`、`verify-linux-e2e-and-visual-regressions` 和 `enforce-directory-coverage-trends` 已完成；`stabilize-e2e-table-keys-and-linux-visuals` 仍等待 Linux CI 的最后验证，`validate-backend-security-and-pagination-contracts` 尚未形成执行任务。官方页面逐路由分类见[覆盖矩阵](../official-page-coverage-matrix.md)；状态以 `openspec list --json` 为准。
 - 后续优先级和其他工程改进见[分析报告第十节](./analysis-report.md#10-2026-09-24-实施进度与后续路线)。清单末尾的 `$openspec-propose` 是历史执行提示；不要为已归档的五项 change 再次创建同名提案。
 
 ## 原五项 change 的实施顺序（已完成前端部分）

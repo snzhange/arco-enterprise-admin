@@ -1,6 +1,8 @@
 # Change 05：codify-page-development-standards 落地清单
 
-> 建议 OpenSpec change ID：`codify-page-development-standards`  
+> 文档性质：历史设计与实施记录。该 change 已归档；当前页面规则以[页面开发指南](../page-development-guide.md)为准，新仓库搭建流程以[新后台搭建指南](../arco-admin-new-project-guide.md)为准。本文件中的未勾选项保留原始规划，不代表当前待办。
+
+> 原 OpenSpec change ID：`codify-page-development-standards`
 > 优先级：P1  
 > 依赖：`build-enterprise-page-patterns`  
 > 目标：把已验证的路由、权限、请求、页面组件、视觉和测试模式固化为可执行的中文开发规范
