@@ -17,4 +17,6 @@ export interface User {
   /** @minItems 1 */
   roleCodes: RoleCode[];
   lastActiveAt: string;
+  /** 当前操作者能否编辑该用户。本人、超出数据范围或持有操作者无法分配的角色时为 false。 */
+  manageable: boolean;
 }

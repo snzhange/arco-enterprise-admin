@@ -261,15 +261,11 @@ export function RolesPage() {
   }
 
   return (
-    <div className="page-container roles-page">
-      <div className="page-heading">
-        <div>
-          <Text className="eyebrow">ACCESS CONTROL</Text>
-          <Title heading={2}>角色与权限</Title>
-          <Text type="secondary">统一管理角色、权限点和数据范围。</Text>
-        </div>
-      </div>
+    <div className="roles-page">
       <Card className="panel-card user-list-card">
+        <div className="panel-card-heading">
+          <Title heading={6}>角色与权限</Title>
+        </div>
         <Table<RoleSummary> rowKey="code" loading={rolesQuery.isPending || permissionsQuery.isPending} columns={columns} data={roles} pagination={false} />
       </Card>
     </div>

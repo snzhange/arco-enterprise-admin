@@ -3,7 +3,7 @@ import type { CurrentUser } from '@/api/generated/models'
 import { QueryClient } from '@tanstack/react-query'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AuthProvider } from '@/app/auth'
@@ -46,7 +46,13 @@ const currentUser: CurrentUser = {
 
 function LocationProbe() {
   const location = useLocation()
-  return <output data-testid="location-probe">{location.pathname}</output>
+  const navigate = useNavigate()
+  return (
+    <>
+      <output data-testid="location-probe">{location.pathname}</output>
+      <button type="button" onClick={() => navigate('/users')}>打开用户页</button>
+    </>
+  )
 }
 
 function renderLayout(client: QueryClient) {
@@ -58,6 +64,7 @@ function renderLayout(client: QueryClient) {
             <Routes>
               <Route element={<AppLayout />}>
                 <Route path="/dashboard/workplace" element={<div>当前工作台</div>} />
+                <Route path="/users" element={<div>用户页</div>} />
               </Route>
               <Route path="/login" element={<div data-testid="login-placeholder">登录页</div>} />
             </Routes>
@@ -69,7 +76,7 @@ function renderLayout(client: QueryClient) {
   )
 }
 
-describe('logout boundaries', () => {
+describe('app layout behavior', () => {
   let latestOptions: { mutation?: MutationCallbacks } | undefined
   let mutate: ReturnType<typeof vi.fn>
 
@@ -83,6 +90,42 @@ describe('logout boundaries', () => {
       return { isPending: false, mutate }
     })
     sessionMocks.clearMockSession.mockReset()
+  })
+
+  it('allows collapsing the active group while keeping its route selected', async () => {
+    const user = userEvent.setup()
+    vi.mocked(window.matchMedia).mockImplementation((query) => {
+      const matches = query === '(min-width: 1200px)'
+      return {
+        matches,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      } as unknown as MediaQueryList
+    })
+    renderLayout(createTestQueryClient())
+
+    const dashboardLabel = screen.getAllByText('仪表盘', { exact: true })[0]
+    const dashboardHeader = dashboardLabel.closest('.arco-menu-inline-header')
+    expect(dashboardHeader).toHaveAttribute('aria-expanded', 'true')
+
+    await user.click(dashboardLabel)
+
+    expect(dashboardHeader).toHaveAttribute('aria-expanded', 'false')
+    const selectedMenuItem = document.querySelector('.app-menu .arco-menu-item.arco-menu-selected')
+    expect(selectedMenuItem).toHaveTextContent('工作台')
+
+    await user.click(screen.getByRole('button', { name: '打开用户页' }))
+
+    const systemLabel = screen.getAllByText('系统管理', { exact: true })[0]
+    const systemHeader = systemLabel.closest('.arco-menu-inline-header')
+    expect(systemHeader).toHaveAttribute('aria-expanded', 'true')
+    expect(dashboardHeader).toHaveAttribute('aria-expanded', 'false')
+    expect(document.querySelector('.app-menu .arco-menu-item.arco-menu-selected')).toHaveTextContent('用户管理')
   })
 
   it('clears mock session and query cache before navigating after a successful logout', async () => {

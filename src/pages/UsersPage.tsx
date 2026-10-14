@@ -11,6 +11,7 @@ import type {
 
 import type { ListQueryStateOptions, ListSortDirection } from '@/hooks/useListQueryState'
 import {
+  Avatar,
   Button,
   Card,
   Drawer,
@@ -40,7 +41,6 @@ import { DataTable } from '@/components/data/DataTable'
 import { DetailPanel } from '@/components/data/DetailPanel'
 import { QueryForm } from '@/components/data/QueryForm'
 import { CrudDrawer } from '@/components/form/CrudDrawer'
-import { PageContainer } from '@/components/page/PageContainer'
 import { PageForbiddenState } from '@/components/page/PageState'
 import { useListQueryState } from '@/hooks/useListQueryState'
 
@@ -324,7 +324,7 @@ export function UsersPage() {
       render: (_: unknown, record: User) => (
         <Space size="mini">
           <Button type="text" size="small" icon={<IconEye />} onClick={() => setDetailUser(record)}>查看</Button>
-          {canEdit && <Button type="text" size="small" onClick={() => openEdit(record)}>编辑</Button>}
+          {canEdit && record.manageable && <Button type="text" size="small" onClick={() => openEdit(record)}>编辑</Button>}
         </Space>
       ),
     },
@@ -334,15 +334,13 @@ export function UsersPage() {
     if (!detailUser)
       return []
 
+    // 姓名和邮箱放在抽屉顶部的身份信息区，这里只列其余属性。
     return [
-      { key: 'name', label: '姓名', value: detailUser.name },
-      { key: 'email', label: '工作邮箱', value: detailUser.email },
-      { key: 'department', label: '部门', value: detailUser.department },
+      { key: 'department', label: '部门', value: detailUser.department || '-' },
       { key: 'status', label: '状态', value: <Tag color={statusMeta[detailUser.status].color}>{statusMeta[detailUser.status].label}</Tag> },
       {
         key: 'roles',
         label: '角色',
-        span: 2,
         value: (
           <Space wrap>
             {detailUser.roleCodes.map(code => (
@@ -376,30 +374,22 @@ export function UsersPage() {
 
   if (!canRead || usersForbidden) {
     return (
-      <PageContainer
-        className="users-page"
-        eyebrow="TEAM DIRECTORY"
-        title="用户管理"
-        description="管理团队成员、角色与访问状态。"
-        actions={pageActions}
-      >
+      <div className="users-page">
         <PageForbiddenState
           title={!canRead ? '无权查看用户' : '没有查看用户的权限'}
           description="请联系管理员申请 users:read 权限。"
         />
-      </PageContainer>
+      </div>
     )
   }
 
   return (
-    <PageContainer
-      className="users-page"
-      eyebrow="TEAM DIRECTORY"
-      title="用户管理"
-      description="管理团队成员、角色与访问状态。"
-      actions={pageActions}
-    >
+    <div className="users-page">
       <Card className="panel-card user-list-card">
+        <div className="panel-card-heading">
+          <Typography.Title heading={6}>用户管理</Typography.Title>
+          {pageActions}
+        </div>
         <QueryForm<UserQueryValues>
           form={searchForm}
           className="search-toolbar"
@@ -477,14 +467,23 @@ export function UsersPage() {
       <Drawer
         visible={Boolean(detailUser)}
         title="用户详情"
-        width={460}
+        width={520}
         footer={null}
         onCancel={() => setDetailUser(null)}
         closable
         maskClosable
         unmountOnExit
       >
-        <DetailPanel items={detailItems} />
+        {detailUser && (
+          <div className="user-detail-header">
+            <Avatar size={44}>{detailUser.name.slice(0, 1)}</Avatar>
+            <div className="user-detail-identity">
+              <span className="user-detail-name" title={detailUser.name}>{detailUser.name}</span>
+              <span className="user-detail-email">{detailUser.email}</span>
+            </div>
+          </div>
+        )}
+        <DetailPanel items={detailItems} column={1} />
       </Drawer>
 
       <CrudDrawer
@@ -531,6 +530,6 @@ export function UsersPage() {
           )}
         </Form>
       </CrudDrawer>
-    </PageContainer>
+    </div>
   )
 }

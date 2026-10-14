@@ -96,6 +96,20 @@ describe('rbac mock contracts', () => {
     }
   })
 
+  it('marks the current actor as not manageable and rejects editing oneself', async () => {
+    const listResponse = await fetch('http://localhost/api/users?page=0&size=20', { headers: headers() })
+    const content = (await listResponse.json()).content as Array<{ email: string, manageable: boolean }>
+    expect(content.find(user => user.email === 'lin.xiao@arco.dev')?.manageable).toBe(false)
+    expect(content.find(user => user.email === 'zhou.ming@arco.dev')?.manageable).toBe(true)
+
+    const selfResponse = await fetch('http://localhost/api/users/00000000-0000-4000-8000-000000000101', {
+      method: 'PATCH',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'disabled' }),
+    })
+    expect(selfResponse.status).toBe(403)
+  })
+
   it('preserves existing inactive or unknown role codes but rejects newly assigned unknown roles', async () => {
     const preserveInactiveResponse = await fetch('http://localhost/api/users/00000000-0000-4000-8000-000000000103', {
       method: 'PATCH',

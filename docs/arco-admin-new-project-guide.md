@@ -201,11 +201,11 @@ export const ordersRoute = {
 
 ### 服务端分页列表
 
-以 `src/pages/UsersPage.tsx` 为结构参考，通常组合：
+以 `src/pages/UsersPage.tsx` 为交互参考，content 直接承载 Card，不要将 Card 再放入 PageContainer。通常组合：
 
-- `PageContainer`：页面标题、说明和操作区。
+- `PageContainer`：仅在工作台、详情或确实需要页面级标题时使用；不要求每页都有，也不把解释性文案作为固定页面 header。
 - `QueryForm`：查询字段、重置和高级筛选。
-- `DataTable`：加载、错误、空状态、分页和刷新。
+- `DataTable`：加载、错误、空状态、分页和刷新；列表操作放在其 `toolbar`，其他操作放 Card 内部工具栏或表单操作区。
 - `DetailPanel`：详情抽屉中的只读字段。
 - `CrudDrawer`：新增和编辑表单。
 - `useListQueryState`：URL 中可分享的分页、排序和非敏感筛选。
@@ -226,6 +226,15 @@ export const ordersRoute = {
 ### 仪表盘和只读页面
 
 仪表盘可参考 `src/pages/DashboardPage.tsx`。页面不必强行套用表格抽象，但仍要有加载、错误和无数据状态。纯展示图表可用视觉回归和隔离渲染测试验收；有业务操作的页面必须补行为测试。
+
+### 页面视觉结构
+
+- `body` 使用 Arco `--color-bg-1`，content canvas 使用 `--color-fill-2`，Card 使用 `--color-bg-2`；以 `--color-border` 或 `--color-border-1` 给 Card 保留清晰的 1px 边界。不要把三层做成相同灰色，也不要仅靠弱阴影区分 Card。
+- content padding 由应用布局统一管理。列表、查询、审计、用户和角色页面通常直接在 content 中渲染 Card，不额外套 PageContainer 或重复大块 padding/最大宽度。
+- 页面 header 不放解释性副标题、欢迎说明或重复的页面标题。确有必要的短标题和相关操作放在 Card 内部工具栏；列表操作放在 DataTable toolbar，表单操作放在表单操作区。
+- 菜单分组与子项的文字起点和基线保持一致，图标使用固定尺寸槽位。折叠时 Arco 会切换到弹出式子菜单标题并给图标设置 `margin-right: 100vw`；隐藏文本时要保留 SVG，固定 40px 标题区域并验证图标仍在 48px 侧栏范围内。
+- DataTable 表头沿用 Arco 默认 14px/500；不要在通用 `.data-table .arco-table-th` 中设置 10px/600，紧凑样式应使用页面级作用域类。
+- 通用色彩、边界和留白使用 Arco token 与模板公共样式。至少检查桌面、窄屏和手机视口的层级对比、文字对齐与横向溢出。
 
 ## 复制文件清单
 

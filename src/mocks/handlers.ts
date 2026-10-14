@@ -1,3 +1,5 @@
+import type { MockUser } from './rbac'
+
 import type {
   CreateUserRequest,
   CurrentUser,
@@ -10,7 +12,6 @@ import type {
   UserPage,
   UserStatus,
 } from '@/api/generated/models'
-
 import { http, HttpResponse } from 'msw'
 import {
   cloneRoleSummaries,
@@ -80,7 +81,7 @@ function persistRoles(value: RoleSummary[]): void {
 
 const roles: RoleSummary[] = readPersistedRoles()
 
-let users: User[] = initialUsers.map(user => ({ ...user, roleCodes: [...user.roleCodes] }))
+let users: MockUser[] = initialUsers.map(user => ({ ...user, roleCodes: [...user.roleCodes] }))
 
 /** Reset mutable MSW state between tests without changing in-test persistence semantics. */
 export function resetMockStateForTests(): void {
@@ -164,7 +165,7 @@ function parseUserSort(searchParams: URLSearchParams): UserSort | undefined {
   return { field, direction }
 }
 
-function sortUsers(records: User[], sort?: UserSort): User[] {
+function sortUsers(records: MockUser[], sort?: UserSort): MockUser[] {
   if (!sort)
     return records
 
@@ -179,7 +180,7 @@ function sortUsers(records: User[], sort?: UserSort): User[] {
   })
 }
 
-function isValidRoleCodes(roleCodes: unknown, existingUser?: User): roleCodes is string[] {
+function isValidRoleCodes(roleCodes: unknown, existingUser?: MockUser): roleCodes is string[] {
   if (!Array.isArray(roleCodes) || roleCodes.length === 0 || roleCodes.some(code => typeof code !== 'string'))
     return false
   if (new Set(roleCodes).size !== roleCodes.length)
@@ -190,6 +191,30 @@ function isValidRoleCodes(roleCodes: unknown, existingUser?: User): roleCodes is
     const option = MOCK_ROLE_OPTIONS.find(item => item.code === code)
     return Boolean(option?.active)
   })
+}
+
+const DATA_SCOPE_RANK: Record<string, number> = { self: 0, department: 1, all: 2 }
+
+/** Mirrors the Java rule: an actor can grant a role only within its own permissions and data scope. */
+function canGrantRole(actor: CurrentUser, role: RoleSummary): boolean {
+  if (actor.permissions.includes('*'))
+    return true
+  return DATA_SCOPE_RANK[role.dataScope] <= DATA_SCOPE_RANK[actor.dataScope]
+    && role.permissions.every(permission => actor.permissions.includes(permission))
+}
+
+/** Actors cannot edit themselves or users holding roles they could not grant; roles without a summary grant nothing. */
+function canManageUser(actor: CurrentUser, user: MockUser): boolean {
+  if (user.email.toLowerCase() === actor.email.toLowerCase())
+    return false
+  return user.roleCodes.every((code) => {
+    const role = roles.find(item => item.code === code)
+    return !role || canGrantRole(actor, role)
+  })
+}
+
+function toUserResponse(actor: CurrentUser, user: MockUser): User {
+  return { ...user, manageable: canManageUser(actor, user) }
 }
 
 function isValidRolePermissions(role: RoleSummary, permissions: unknown): permissions is string[] {
@@ -316,7 +341,8 @@ export const handlers = [
       const matchesKeyword = !keyword || user.name.toLowerCase().includes(keyword) || user.email.toLowerCase().includes(keyword)
       return matchesKeyword && (!status || user.status === status)
     })
-    const content = sortUsers(filtered, sort).slice(page * size, (page + 1) * size)
+    const actor = getCurrentUser(request)
+    const content = sortUsers(filtered, sort).slice(page * size, (page + 1) * size).map(user => toUserResponse(actor, user))
     const response: UserPage = {
       content,
       page,
@@ -336,14 +362,14 @@ export const handlers = [
     const body = await request.json() as CreateUserRequest
     if (!isValidRoleCodes(body.roleCodes))
       return badRequest('roleCodes 包含未知、重复或不可分配的角色代码', [{ field: 'roleCodes', message: '请选择有效的角色代码' }])
-    const user: User = {
+    const user: MockUser = {
       id: crypto.randomUUID(),
       ...body,
       status: 'active',
       lastActiveAt: new Date().toISOString(),
     }
     users = [user, ...users]
-    return HttpResponse.json(user, { status: 201 })
+    return HttpResponse.json(toUserResponse(getCurrentUser(request), user), { status: 201 })
   }),
   http.patch('*/api/users/:userId', async ({ params, request }) => {
     if (!hasSession(request))
@@ -355,11 +381,14 @@ export const handlers = [
     const index = users.findIndex(user => user.id === params.userId)
     if (index < 0)
       return problemResponse({ title: 'Not Found', status: 404, detail: '用户不存在' }, 404)
+    const actor = getCurrentUser(request)
+    if (!canManageUser(actor, users[index]))
+      return forbidden()
     const body = await request.json() as UpdateUserRequest
     if (body.roleCodes !== undefined && !isValidRoleCodes(body.roleCodes, users[index]))
       return badRequest('roleCodes 包含未知、重复或不可分配的角色代码', [{ field: 'roleCodes', message: '请选择有效的角色代码' }])
     users[index] = { ...users[index], ...body, roleCodes: body.roleCodes ?? users[index].roleCodes }
-    return HttpResponse.json(users[index])
+    return HttpResponse.json(toUserResponse(actor, users[index]))
   }),
   http.get('*/api/roles', ({ request }) => {
     if (!hasSession(request))

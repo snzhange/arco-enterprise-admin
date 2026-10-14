@@ -42,6 +42,7 @@ const operatorUser: User = {
   status: 'active',
   roleCodes: ['operator'],
   lastActiveAt: '2026-09-06T09:21:00+08:00',
+  manageable: true,
 }
 
 function renderUsersPage(user: CurrentUser = adminUser, client = createTestQueryClient()) {
@@ -158,6 +159,22 @@ describe('users page core workflows', () => {
       isPlaceholderData: false,
       refetch: vi.fn(),
     })
+  })
+
+  it('hides editing for users the server marks as not manageable', () => {
+    apiMocks.useListUsers.mockReturnValue({
+      data: { content: [{ ...operatorUser, manageable: false }], page: 0, size: 10, totalElements: 1, totalPages: 1 },
+      isPending: false,
+      isFetching: false,
+      isError: false,
+      isPlaceholderData: false,
+      refetch: vi.fn(),
+    })
+    renderUsersPage()
+
+    const row = screen.getByRole('row', { name: /周明/ })
+    expect(within(row).getByRole('button', { name: '查看' })).toBeVisible()
+    expect(within(row).queryByRole('button', { name: '编辑' })).not.toBeInTheDocument()
   })
 
   it('opens details, edits with stable role codes, and creates a user', async () => {

@@ -27,3 +27,6 @@ pnpm build
 - 前端权限只负责菜单和界面体验，Java Spring Security 必须在服务端再次鉴权。
 - 新增接口先修改 `openapi/admin-api.yaml`（或替换成 Java 的 `/v3/api-docs`），再生成客户端。
 - Mock 仅在 `VITE_ENABLE_MOCK=true` 时启用。
+- 一级菜单 SVG 在展开和折叠状态都必须保持可见尺寸；图标槽位内覆盖 Arco 的默认图标右边距时，选择器优先级要高于 `.arco-menu-vertical .arco-menu-inline-header .arco-icon`，并回归检查展开态图标宽度及折叠态 48px 侧栏边界。
+- 菜单分组 `openKeys` 首次按当前路由初始化，之后由用户点击控制；路由切换到其他分组时可以展开目标分组，但不要在每次渲染时强制展开当前路由分组，否则当前选中的子项会阻止一级菜单收起。回归检查收起后子项仍保持选中。
+- `DataTable` 表头沿用 Arco 默认 14px/500 字重和主文本色 `--color-text-1`，保持与原生 Arco Table 一致；不要在通用表格选择器中设置 10px/600 或弱化为 `--color-text-3`，紧凑或弱化样式使用页面级作用域类。

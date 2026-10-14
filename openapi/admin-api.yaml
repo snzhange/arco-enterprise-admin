@@ -448,7 +448,7 @@ components:
       enum: [active, invited, disabled]
     User:
       type: object
-      required: [id, name, email, department, status, roleCodes, lastActiveAt]
+      required: [id, name, email, department, status, roleCodes, lastActiveAt, manageable]
       properties:
         id:
           type: string
@@ -471,6 +471,9 @@ components:
         lastActiveAt:
           type: string
           format: date-time
+        manageable:
+          type: boolean
+          description: 当前操作者能否编辑该用户。本人、超出数据范围或持有操作者无法分配的角色时为 false。
     UserPage:
       type: object
       required: [content, page, size, totalElements, totalPages]

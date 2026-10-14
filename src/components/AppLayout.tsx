@@ -56,10 +56,23 @@ export function AppLayout() {
   const t = useLocale()
   const { locale, setLocale, setTheme, settings, theme, updateSettings } = useAppSettings()
   const currentGroup = getNavigationGroup(location.pathname)
+  const currentGroupKey = currentGroup?.key
   const currentItem = getNavigationItem(location.pathname)
   const visibleNavigationGroups = getVisibleNavigationGroups(user)
   const [collapsed, setCollapsed] = useState(false)
-  const [openKeys, setOpenKeys] = useState<string[]>(currentGroup ? [currentGroup.key] : [])
+  const [navigationState, setNavigationState] = useState(() => ({
+    routeGroupKey: currentGroupKey,
+    openKeys: currentGroupKey ? [currentGroupKey] : [],
+  }))
+
+  if (navigationState.routeGroupKey !== currentGroupKey) {
+    setNavigationState(state => ({
+      routeGroupKey: currentGroupKey,
+      openKeys: currentGroupKey && !state.openKeys.includes(currentGroupKey)
+        ? [...state.openKeys, currentGroupKey]
+        : state.openKeys,
+    }))
+  }
 
   const logout = useLogout({
     mutation: {
@@ -76,11 +89,7 @@ export function AppLayout() {
   })
 
   const menuWidth = collapsed ? COLLAPSED_WIDTH : settings.menuWidth
-  const effectiveOpenKeys = collapsed
-    ? []
-    : currentGroup && !openKeys.includes(currentGroup.key)
-      ? [...openKeys, currentGroup.key]
-      : openKeys
+  const menuOpenKeys = collapsed ? [] : navigationState.openKeys
   const contentStyle = {
     paddingLeft: settings.menu ? menuWidth : 0,
     paddingTop: settings.navbar ? NAVBAR_HEIGHT : 0,
@@ -226,21 +235,28 @@ export function AppLayout() {
               className="app-menu"
               collapse={collapsed}
               selectedKeys={[location.pathname]}
-              openKeys={effectiveOpenKeys}
+              openKeys={menuOpenKeys}
               onClickMenuItem={key => navigate(key)}
-              onClickSubMenu={(_, keys) => setOpenKeys(keys)}
+              onClickSubMenu={(_, keys) => setNavigationState(state => ({ ...state, openKeys: keys }))}
             >
               {visibleNavigationGroups.map(group => (
                 <Menu.SubMenu
                   key={group.key}
                   title={(
-                    <>
-                      {group.icon}
-                      {t(group.messageKey)}
-                    </>
+                    <span className="app-menu-label">
+                      <span className="app-menu-icon-slot">{group.icon}</span>
+                      <span>{t(group.messageKey)}</span>
+                    </span>
                   )}
                 >
-                  {group.children.map(item => <Menu.Item key={item.key}>{t(item.messageKey)}</Menu.Item>)}
+                  {group.children.map(item => (
+                    <Menu.Item key={item.key}>
+                      <span className="app-menu-item-label">
+                        <span className="app-menu-icon-slot" aria-hidden="true" />
+                        <span>{t(item.messageKey)}</span>
+                      </span>
+                    </Menu.Item>
+                  ))}
                 </Menu.SubMenu>
               ))}
             </Menu>

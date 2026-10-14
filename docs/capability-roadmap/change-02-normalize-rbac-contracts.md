@@ -206,7 +206,7 @@ GET /api/permissions
 - [ ] 缺少读/写 authority 分别返回 403。
 - [ ] 提交不存在或不可分配角色代码返回 400 Problem Details。
 - [ ] `department` 用户无法读取其他部门数据。
-- [ ] `self` 用户只能读取本人创建或负责的数据。
+- [ ] `self` 用户只能读取本人的用户记录和本人产生的审计记录。
 - [ ] Controller 权限和 Service 数据范围均有测试，不能只测 UI。
 
 ## 7. 必跑命令

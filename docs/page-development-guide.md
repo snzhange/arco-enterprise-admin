@@ -11,7 +11,7 @@
 
 ## 2. 路由、菜单和语言
 
-在 [route manifest](../src/app/route-manifest.tsx) 的 `routeGroups` 下增加页面，复用 `lazyNamed` 延迟加载；分组 `messageKey` 和叶子 `messageKey` 要在 [中英文词条](../src/app/i18n/messages.ts) 中声明。分组权限和叶子权限共同约束菜单与直接访问，同一 URL 不另建 pathname 权限表。例如现有系统分组的写法：
+在 [route manifest](../src/app/route-manifest.tsx) 的 `routeGroups` 下增加页面，复用 `lazyNamed` 延迟加载；分组 `messageKey` 和叶子 `messageKey` 要在 [中英文词条](../src/app/i18n/messages.ts) 中声明。分组权限和叶子权限共同约束菜单与直接访问，同一 URL 不另建 pathname 权限表。菜单的 `openKeys` 首次按当前路由初始化，之后由分组点击回调控制；路由跨到另一分组时可展开目标组，但不要每次渲染都强制合并当前路由分组，否则选中的子项会令一级菜单无法收起。回归检查收起后当前子项仍被选中。例如现有系统分组的写法：
 
 ```text
 // 放在 routeGroups 的 system.children 内；这是当前 UsersPage 的 manifest 记录。
@@ -37,12 +37,16 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 
 ## 5. 页面骨架与已有组件
 
-页面整体标题、描述、操作区使用 [PageContainer](../src/components/page/PageContainer.tsx)，参数为 `title`、可选 `eyebrow`/`description`/`actions` 和 `children`。普通内容页按需组合 Arco 表单、文本或 Card；仪表盘/可视化页按信息密度选择对应图表与内容区，参考 [工作台](../src/pages/DashboardPage.tsx)，不强制使用表格。
+页面不要求统一使用页面级标题或 [PageContainer](../src/components/page/PageContainer.tsx)。列表、查询、审计、用户和角色等内容页由布局 content 直接承载 Card，不要再套 `PageContainer -> Card`；工作台、详情或确实需要页面级标题的页面才按需使用 PageContainer。content header 不放欢迎语、功能说明或重复标题；确有必要的短标题和操作放在 Card 内部工具栏，列表操作放在 DataTable toolbar，表单操作放在表单操作区。
 
 服务端分页列表可以按下述最小形态拼装；变量来自页面自己的状态与生成 hook，这段是结构示例而非可直接运行的业务代码：
 
 ```tsx
-<PageContainer title="用户管理" actions={canEdit ? createButton : undefined}>
+<Card className="panel-card">
+  <div className="panel-card-heading">
+    <Typography.Title heading={6}>用户管理</Typography.Title>
+    {canEdit && createButton}
+  </div>
   <QueryForm form={searchForm} onSubmit={handleSearch} onReset={resetSearch} loading={usersQuery.isFetching}>
     <Form.Item field="keyword" label="关键词"><Input allowClear /></Form.Item>
   </QueryForm>
@@ -55,7 +59,7 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
     onRetry={() => void usersQuery.refetch()}
     pagination={{ current: currentPage, pageSize: currentPageSize, total: usersQuery.data?.totalElements ?? 0, onChange: changePage }}
   />
-</PageContainer>
+</Card>
 ```
 
 - [QueryForm](../src/components/data/QueryForm.tsx) 需要 Arco `form` 实例、显式表单项、`onSubmit` 和 `onReset`；可用 `advancedChildren`/`expanded`/`onExpandedChange` 展开高级查询。组件不自动生成字段或发请求。
@@ -72,7 +76,7 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 
 ## 7. Arco Pro 视觉和可访问性
 
-页面宽度、内边距与断点使用布局及 `PageContainer` 的现有样式；不在页面单独复制一套最大宽度或侧栏规则。当前页面基线为 60px 顶栏、220px/48px 侧栏，通用卡片采用 `panel-card`，抽屉优先使用组件默认 520px（详情示例为 460px）；表格使用现有行高、密度和独立分页，筛选工具栏可换行。小屏查询项、页面操作不得互相遮挡，表格可横向浏览，抽屉内容保持可访问。
+content 外边距由外层布局统一提供，页面不要重复增加大块 padding、最大宽度或包裹 Card 的 page header。`body` 使用 `--color-bg-1`，content canvas 使用 `--color-fill-2`，Card 使用 `--color-bg-2`，并以 `--color-border` 或 `--color-border-1` 显示清晰的 1px 边界；不要让三层背景相同，也不要仅靠弱阴影区分 Card。通用卡片采用 `panel-card` 并保持稳定内边距。菜单分组与子项文字起点和基线一致，图标槽位尺寸固定。Arco 会给一级菜单图标默认添加 `margin-right: 16px`，若槽位也是紧凑宽度，低优先级覆盖会把 SVG 挤到几乎不可见；图标槽位规则必须以足够优先级将右边距归零，并验证展开态 SVG 宽度。折叠时 Arco 会把一级菜单切换到弹出式标题，并默认给图标设置 `margin-right: 100vw` 来隐藏文本；自定义图标包装后必须覆盖该边距、隐藏文字并将 SVG 保持在固定 40px 标题区域内，同时验证图标在 48px 侧栏中居中且可见。当前页面基线为 60px 顶栏、220px/48px 侧栏；抽屉优先使用组件默认 520px（详情示例为 460px）；表格使用现有行高、密度和独立分页，筛选工具栏可换行。`DataTable` 表头沿用 Arco 默认 14px/500 字号和字重，并使用主文本色 `--color-text-1`，与原生 Arco `Table` 的表头保持一致；通用 `.data-table .arco-table-th` 可以设置高度和背景，但不要把文字设成弱化色 `--color-text-3`，也不得全局压成 10px/600。页面确需紧凑或弱化表头时，使用页面级作用域类并用浏览器回归检查计算样式，避免共享样式让同一套主题下的页面表头呈现不一致。小屏查询项、页面操作不得互相遮挡，表格可横向浏览，抽屉内容保持可访问。
 
 新样式优先用 Arco 的 `--color-text-*`、`--color-border-*`、`--color-fill-*`、`--color-bg-*` 和 `rgb(var(--primary-6))`，或 [现有项目变量](../src/index.css)；常见文本、边框和背景不要再硬编码色值。图表分组色和品牌对照素材可保留专用语义。`vendor/` 的官方归档只用于视觉对照，不能作为运行时依赖。
 
@@ -88,7 +92,7 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 - [ ] 新接口先更新 OpenAPI 并运行 `pnpm generate:api`、`pnpm check:api`；页面不直接用 Axios，也不修改生成目录。
 - [ ] 列表查询、分页基数、排序、URL 中可分享状态与敏感关键词隔离正确；mutation 有提交中状态，成功后精确失效，失败保留上下文。
 - [ ] loading、背景刷新、空数据、失败重试、401、403、字段错误、5xx 与 traceId 各有合理处理。
-- [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用。
+- [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用；展开与折叠菜单中的一级 SVG 均有可见尺寸，折叠图标位于侧栏范围内；表头字号/字重与页面密度约定一致，默认表头颜色在原生 Table 与 DataTable 间一致。
 - [ ] 纯逻辑单测、请求/权限集成测试、关键正向与异常 E2E 以及必要视觉基线通过；Java 服务端另行验证接口鉴权和数据范围。
 
 本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e:functional`；Playwright fixture 会把未预期的 page error、console error 和 React key 警告作为失败证据。视觉回归单独执行 `pnpm e2e:visual`，需要更新 Linux 基线时使用 `pnpm e2e:visual:update` 并审查差异；macOS 本地不能替代 Linux 快照环境，不能直接更新基线，`pnpm e2e:check-env` 在非 Linux/Node 22 环境失败属于预期；契约变更再执行 `pnpm check:api`。

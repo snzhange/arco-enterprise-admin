@@ -69,7 +69,10 @@ const MOCK_USER_SEEDS: Array<[string, string, string, string, UserStatus, string
   ['00000000-0000-4000-8000-000000000112', '唐川', 'tang.chuan@arco.dev', '技术平台部', 'active', ['auditor', 'legacy-manager'], '2026-09-01T17:42:00+08:00'],
 ]
 
-export const MOCK_INITIAL_USERS: User[] = MOCK_USER_SEEDS.map(([id, name, email, department, status, roleCodes, lastActiveAt]) => ({
+/** Stored mock user; `manageable` depends on the requesting actor, so handlers compute it per response. */
+export type MockUser = Omit<User, 'manageable'>
+
+export const MOCK_INITIAL_USERS: MockUser[] = MOCK_USER_SEEDS.map(([id, name, email, department, status, roleCodes, lastActiveAt]) => ({
   id,
   name,
   email,
@@ -83,7 +86,7 @@ export function cloneRoleSummaries(source: RoleSummary[] = MOCK_ROLE_SUMMARIES):
   return source.map(role => ({ ...role, permissions: [...role.permissions] }))
 }
 
-export function cloneUsers(source: User[] = MOCK_INITIAL_USERS): User[] {
+export function cloneUsers(source: MockUser[] = MOCK_INITIAL_USERS): MockUser[] {
   return source.map(user => ({ ...user, roleCodes: [...user.roleCodes] }))
 }
 

@@ -39,11 +39,28 @@ test('logs in, collapses navigation and creates list content', async ({ page }) 
   await page.getByText('列表页', { exact: true }).click()
   await page.getByText('查询表格', { exact: true }).click()
   await expect(page).toHaveURL(/list\/search-table/)
+  const tableHeader = page.locator('.data-table .arco-table-th').first()
+  await expect(tableHeader).toHaveCSS('font-size', '14px')
+  await expect(tableHeader).toHaveCSS('font-weight', '500')
+  const mainTextColor = await page.locator('body').evaluate(element => getComputedStyle(element).getPropertyValue('--color-text-1').trim())
+  await expect(tableHeader).toHaveCSS('color', mainTextColor)
 
   await page.getByRole('button', { name: '新建' }).click()
   await page.getByLabel('内容名称').last().fill('测试内容')
   await page.getByRole('button', { name: '确定' }).click()
   await expect(page.getByText('测试内容')).toBeVisible()
+})
+
+test('allows collapsing the active menu group without clearing its selected page', async ({ page }) => {
+  await login(page)
+
+  const dashboardGroup = page.locator('.app-menu .arco-menu-inline-header').filter({ hasText: '仪表盘' })
+  await expect(dashboardGroup).toHaveAttribute('aria-expanded', 'true')
+  await dashboardGroup.click()
+
+  await expect(dashboardGroup).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.locator('.app-menu .arco-menu-item.arco-menu-selected')).toHaveText('工作台')
+  await expect(page).toHaveURL(/dashboard\/workplace/)
 })
 
 test('automatically collapses the sider below the xl breakpoint', async ({ page }) => {
@@ -55,6 +72,24 @@ test('automatically collapses the sider below the xl breakpoint', async ({ page 
   await expect(sider).toHaveCSS('width', '48px')
   await expect(layoutContent).toHaveCSS('padding-left', '48px')
   await expect(page.getByRole('button', { name: '展开侧栏' })).toBeVisible()
+  const menuIcon = page.locator('.app-menu .arco-menu-pop-header .app-menu-icon-slot .arco-icon').first()
+  await expect(menuIcon).toBeVisible()
+  await expect(menuIcon).toHaveCSS('margin-right', '0px')
+  const [siderBounds, iconBounds] = await Promise.all([sider.boundingBox(), menuIcon.boundingBox()])
+  expect(siderBounds).not.toBeNull()
+  expect(iconBounds).not.toBeNull()
+  expect(iconBounds!.x).toBeGreaterThanOrEqual(siderBounds!.x)
+  expect(iconBounds!.x + iconBounds!.width).toBeLessThanOrEqual(siderBounds!.x + siderBounds!.width)
+  await page.getByRole('button', { name: '展开侧栏' }).click()
+  const expandedMenuIcons = await page.locator('.app-menu .arco-menu-inline-header .app-menu-icon-slot .arco-icon').evaluateAll(elements => elements.map(element => ({
+    width: element.getBoundingClientRect().width,
+    marginRight: getComputedStyle(element).marginRight,
+  })))
+  expect(expandedMenuIcons.length).toBeGreaterThan(0)
+  for (const icon of expandedMenuIcons) {
+    expect(icon.width).toBeGreaterThanOrEqual(16)
+    expect(icon.marginRight).toBe('0px')
+  }
   await page.screenshot({ path: 'test-results/dashboard-mobile-breakpoint.png' })
 })
 

@@ -1,3 +1,4 @@
+import type { DescriptionsProps } from '@arco-design/web-react'
 import type { ReactNode } from 'react'
 
 import { Descriptions } from '@arco-design/web-react'
@@ -15,9 +16,11 @@ export interface DetailPanelProps {
   loading?: boolean
   error?: unknown
   emptyTitle?: ReactNode
+  /** 列数按窗口宽度响应；放在抽屉等窄容器里时传 1，避免标签和值被挤成多列。 */
+  column?: DescriptionsProps['column']
 }
 
-export function DetailPanel({ items = [], loading = false, error, emptyTitle = '暂无详情' }: DetailPanelProps) {
+export function DetailPanel({ items = [], loading = false, error, emptyTitle = '暂无详情', column = { xs: 1, md: 2 } }: DetailPanelProps) {
   if (loading)
     return <PageLoadingState label="正在加载详情..." />
   if (error)
@@ -34,7 +37,7 @@ export function DetailPanel({ items = [], loading = false, error, emptyTitle = '
         value: item.value,
         span: item.span,
       }))}
-      column={{ xs: 1, md: 2 }}
+      column={column}
       border
       tableLayout="fixed"
     />
