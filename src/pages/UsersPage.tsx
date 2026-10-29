@@ -294,13 +294,13 @@ export function UsersPage() {
     {
       title: '角色',
       dataIndex: 'roleCodes',
+      width: 250,
       render: (roleCodes: string[]) => (
-        <Space wrap>
-          {roleCodes.map(code => (
-            <Tag key={code} color="arcoblue" bordered={false}>
-              {canEdit ? roleLabel(roleDirectoryByCode.get(code), code) : code}
-            </Tag>
-          ))}
+        <Space className="users-role-cell" wrap>
+          {roleCodes.map((code) => {
+            const label = canEdit ? roleLabel(roleDirectoryByCode.get(code), code) : code
+            return <Tag key={code} color="arcoblue" bordered={false} title={label}>{label}</Tag>
+          })}
         </Space>
       ),
     },

@@ -204,6 +204,7 @@ body[arco-theme='dark'] .login-content { background: #fff; }
 .query-form-advanced { flex: 0 0 100%; }
 .query-form-actions { flex: 0 0 auto; }
 .query-form-actions .arco-btn { min-width: 72px; }
+.query-form:not(.official-search-form) .query-form-actions { position: relative; top: 8px; }
 .data-table { min-width: 0; }
 .data-table-toolbar { display: flex; min-height: 62px; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 11px; }
 .data-table-toolbar > :first-child { min-width: 0; }
@@ -233,7 +234,9 @@ body[arco-theme='dark'] .login-content { background: #fff; }
 .users-page .query-form { padding-bottom: 20px; border-bottom: 1px solid var(--color-border-1); }
 .users-page .query-form-fields .arco-form-item { margin-bottom: 0; }
 .users-page .data-table .arco-table-container { overflow-x: auto; }
-.users-page .data-table .arco-table { min-width: 900px; }
+.users-page .data-table .arco-table { min-width: 1130px; }
+.users-role-cell { display: flex; min-width: 0; max-width: 100%; }
+.users-role-cell .arco-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .standalone-page { display: grid; min-height: 100vh; place-items: center; background: var(--canvas); }
 .page-skeleton { max-width: 1480px; margin: 36px 40px; }
 .page-error { max-width: 500px; margin: 100px auto; padding: 30px; border: 1px solid var(--line); border-radius: 8px; background: #fff; text-align: center; }
@@ -280,6 +283,7 @@ body[arco-theme='dark'] .login-content { background: #fff; }
   .page-container-actions { width: 100%; }
   .page-container-actions .arco-btn { flex: 0 0 auto; }
   .query-form { align-items: stretch; flex-direction: column; }
+  .query-form:not(.official-search-form) .query-form-actions { top: 0; }
   .query-form-fields { width: 100%; }
   .query-form-actions { width: 100%; }
   .query-form-actions .arco-space { width: 100%; }
@@ -315,7 +319,6 @@ body[arco-theme='dark'] .login-content { background: #fff; }
 
 @media (max-width: 900px) {
   .page-container { padding-right: 24px; padding-left: 24px; }
-  .users-page .data-table .arco-table { min-width: 860px; }
 }
 
 @media (max-width: 390px) {

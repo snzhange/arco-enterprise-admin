@@ -1,6 +1,6 @@
 # 页面开发指南
 
-本文适用于新增和维护业务页面。先按页面的数据来源与交互需求选择模式，再组合现有组件；不要求每个页面都具备查询、表格和 CRUD。现有服务端分页样例见 [用户管理](../src/pages/UsersPage.tsx)，本地数据样例见 [查询表格](../src/pages/official/SearchTablePage.tsx)，样式入口见 [src/index.css](../src/index.css)。
+本文适用于新增和维护业务页面。先按页面的数据来源与交互需求选择模式，再组合现有组件；不要求每个页面都具备查询、表格和 CRUD。现有服务端分页样例见 [用户管理](../src/pages/UsersPage.tsx)，本地数据样例见 [查询表格](../src/pages/official/SearchTablePage.tsx)，样式入口见 [src/index.css](../src/index.css)。本指南同时是 UI 一致性基线：业务页面和深链入口都应遵循同一套主题 token、组件组合和响应式验收规则。
 
 ## 1. 页面目录与职责
 
@@ -63,10 +63,12 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 ```
 
 - [QueryForm](../src/components/data/QueryForm.tsx) 需要 Arco `form` 实例、显式表单项、`onSubmit` 和 `onReset`；可用 `advancedChildren`/`expanded`/`onExpandedChange` 展开高级查询。组件不自动生成字段或发请求。
-- [DataTable](../src/components/data/DataTable.tsx) 需要 `rowKey`、`columns` 和 `data`；分页通过 `{ current, pageSize, total, onChange }` 显式控制，另可传 `toolbar`、`batchActions`、`onRefresh`、`rowSelection`、`onTableChange`、`error`/`onRetry`。初次加载、空结果与背景刷新由页面状态和表格共同处理。窄屏保持横向滚动。
+- [DataTable](../src/components/data/DataTable.tsx) 需要 `rowKey`、`columns` 和 `data`；分页通过 `{ current, pageSize, total, onChange }` 显式控制，另可传 `toolbar`、`batchActions`、`onRefresh`、`rowSelection`、`onTableChange`、`error`/`onRetry`。初次加载、空结果与背景刷新由页面状态和表格共同处理。窄屏保持横向滚动：共享的 `.data-table-scroll` 提供键盘焦点和 `aria-label`，390px 断点显示滚动提示；长文本列使用省略和 `title` 或详情抽屉查看完整值，不要让中文逐字换行。
 - 新增/编辑抽屉用 [CrudDrawer](../src/components/form/CrudDrawer.tsx)：`visible`、`title`、`onCancel`、`onConfirm` 和 `children` 必填；`confirmLoading`、`confirmDisabled`、`afterClose` 可选，默认宽 520。表单校验、创建/更新 mutation、取消与成功关闭由页面显式处理，失败时保留表单。
 - 详情字段使用 [DetailPanel](../src/components/data/DetailPanel.tsx) 的 `items: { key, label, value, span? }[]`，与表格列分开维护；详情抽屉由页面使用 Arco Drawer 控制。如果只有只读详情，不需要 CrudDrawer。
 - 需要独立状态时使用 [PageState](../src/components/page/PageState.tsx) 的 `PageLoadingState`、`PageEmptyState`、`PageErrorState`（`error`、可选 `onRetry`）、`PageForbiddenState`，避免在错误时显示“暂无数据”。
+
+数据密集页面按信息密度选择窄屏呈现方式，不要为了追求单一 DOM 结构而压缩内容：业务目录这类低列数目录页在桌面使用表格、390px 使用业务摘要卡片；索引、用户、审计和查询结果等需要列对齐或批量扫描的页面继续使用表格并横向滚动。角色列表只展示权限数量、代码摘要和数据范围，完整权限清单放入 `CrudDrawer` 编辑，不在表格单元格中铺开复选框。
 
 ## 6. 错误和页面状态
 
@@ -74,17 +76,31 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 
 会话探测 401 才表示未登录；会话网络/5xx 显示重试，业务请求 401 走统一过期协调器，页面不要自行跳转登录。调用 `getErrorMessage`/`toApiError`，不要再解读 Axios response。测试参考 [请求层用例](../src/api/http.test.ts) 和 [用户页用例](../src/pages/UsersPage.test.tsx)。
 
-## 7. Arco Pro 视觉和可访问性
+## 7. 统一 UI、视觉和可访问性
 
-content 外边距由外层布局统一提供，页面不要重复增加大块 padding、最大宽度或包裹 Card 的 page header。`body` 使用 `--color-bg-1`，content canvas 使用 `--color-fill-2`，Card 使用 `--color-bg-2`，并以 `--color-border` 或 `--color-border-1` 显示清晰的 1px 边界；不要让三层背景相同，也不要仅靠弱阴影区分 Card。通用卡片采用 `panel-card` 并保持稳定内边距。菜单分组与子项文字起点和基线一致，图标槽位尺寸固定。Arco 会给一级菜单图标默认添加 `margin-right: 16px`，若槽位也是紧凑宽度，低优先级覆盖会把 SVG 挤到几乎不可见；图标槽位规则必须以足够优先级将右边距归零，并验证展开态 SVG 宽度。折叠时 Arco 会把一级菜单切换到弹出式标题，并默认给图标设置 `margin-right: 100vw` 来隐藏文本；自定义图标包装后必须覆盖该边距、隐藏文字并将 SVG 保持在固定 40px 标题区域内，同时验证图标在 48px 侧栏中居中且可见。当前页面基线为 60px 顶栏、220px/48px 侧栏；抽屉优先使用组件默认 520px（详情示例为 460px）；表格使用现有行高、密度和独立分页，筛选工具栏可换行。`DataTable` 表头沿用 Arco 默认 14px/500 字号和字重，并使用主文本色 `--color-text-1`，与原生 Arco `Table` 的表头保持一致；通用 `.data-table .arco-table-th` 可以设置高度和背景，但不要把文字设成弱化色 `--color-text-3`，也不得全局压成 10px/600。页面确需紧凑或弱化表头时，使用页面级作用域类并用浏览器回归检查计算样式，避免共享样式让同一套主题下的页面表头呈现不一致。小屏查询项、页面操作不得互相遮挡，表格可横向浏览，抽屉内容保持可访问。
+布局的 content 区由外层 `layout-content-wrapper` 统一提供内边距，页面不得重复增加大块 padding、最大宽度或包裹 Card 的 page header。当前页面基线为 60px 顶栏、220px/48px 侧栏；通用卡片采用 `panel-card`，抽屉优先使用组件默认 520px（详情示例为 460px）；表格使用现有行高、密度和独立分页，筛选工具栏可换行。小屏查询项、页面操作不得互相遮挡，表格可横向浏览，抽屉内容保持可访问。
+
+UI 一致性规则适用于已有页面和新页面：
+
+- 共享的画布、卡片、边框、文本和状态颜色统一从 [src/index.css](../src/index.css) 的语义 token 或 Arco token 读取；页面级样式只能表达业务语义，不能重新定义通用白色表面、灰色边框或阴影。
+- 同类页面沿用同一结构：列表和查询直接在 content 中使用 `panel-card`，筛选使用 `QueryForm`，数据列表使用 `DataTable`，新增/编辑使用 `CrudDrawer`。只有工作台、详情或可视化页面确实需要页面级标题时才使用 `PageContainer`。
+- 操作按主要/次要层级排列，窄屏允许换行或堆叠；纯图标操作必须提供 `aria-label` 或 Tooltip。输入项必须有可识别的 `Form.Item` label，弹层打开后焦点和 Escape 关闭行为保持可用。
+- 桌面端查询表单的筛选项与查询/重置操作应保持同一水平基线；操作按钮之间使用明确间距，即使按钮由权限条件渲染也不能贴合或重叠。校验提示或条件字段切换不能把同行控件推到不同基线；字段高度不稳定时使用纵向表单或网格，并将操作区放到字段区下方、设置明确间距。
+- 表格含多个角色、权限或其他标签值时，为该列和表格设置可验证的宽度约束；标签不得覆盖相邻列。长标签单行省略并提供 `title` 或详情入口，窄屏保留横向滚动。
+- 业务名称、编码、说明、权限代码、JSON 和 Trace ID 等长值不能撑开布局；摘要文本省略时必须提供 `title`、详情抽屉或其他可访问的完整值入口。
+- 页面覆盖浅色、暗色、色弱模式和 English；静态标题、表头、按钮、状态、空态、校验和反馈都从消息资源读取。服务端返回的业务名称和诊断 detail 保留原值，不把它们误当成本地化文案。
+
+背景层级必须清晰且遵循主题 token：`body` 使用 `--color-bg-1`，应用 content canvas 使用 `--color-fill-2`，Card 使用 `--color-bg-2`，Card 以 `--color-border` 或 `--color-border-1` 提供可见的 1px 边界。不得把 body、canvas 和 Card 都设成相同灰色，也不要用弱阴影代替卡片边界；优先复用全局 token，不在页面硬编码通用背景或边框色。菜单分组与子项的文字起点和基线保持一致，图标占用固定宽度的槽位。Arco 会给一级菜单图标默认添加 `margin-right: 16px`，若槽位也是紧凑宽度，低优先级覆盖会把 SVG 挤到几乎不可见；图标槽位规则必须以足够优先级将右边距归零，并验证展开态 SVG 宽度。折叠时 Arco 会把一级菜单切换到弹出式标题，并默认给图标设置 `margin-right: 100vw` 来隐藏文本；自定义图标包装后必须覆盖该边距、隐藏文字并将 SVG 保持在固定 40px 标题区域内，同时验证图标在 48px 侧栏中居中且可见。
+
+`DataTable` 表头沿用 Arco 默认 14px/500 字号和字重，并使用主文本色 `--color-text-1`，与原生 Arco `Table` 的表头保持一致；通用 `.data-table .arco-table-th` 可以设置高度和背景，但不要把文字设成弱化色 `--color-text-3`，也不得全局压成 10px/600。页面确需紧凑或弱化表头时，使用页面级作用域类并用浏览器回归检查计算样式，避免共享样式让同一套主题下的页面表头呈现不一致。
 
 新样式优先用 Arco 的 `--color-text-*`、`--color-border-*`、`--color-fill-*`、`--color-bg-*` 和 `rgb(var(--primary-6))`，或 [现有项目变量](../src/index.css)；常见文本、边框和背景不要再硬编码色值。图表分组色和品牌对照素材可保留专用语义。`vendor/` 的官方归档只用于视觉对照，不能作为运行时依赖。
 
-为输入加可识别的 `Form.Item` label，为纯图标按钮加 `aria-label` 或 Tooltip；保证 Tab/Enter/Escape 可用、弹层焦点可恢复，加载和错误有可读反馈。对照 1440 x 900、900 x 700 和 390 x 844 三个视口，检查标题、操作区、表格滚动及抽屉边界。
+为输入加可识别的 `Form.Item` label，为纯图标按钮加 `aria-label` 或 Tooltip；保证 Tab/Enter/Escape 可用、弹层焦点可恢复，加载和错误有可读反馈。对照固定的 1440 x 900、900 x 700 和 390 x 844 三个视口，检查 body 无横向溢出、菜单文字对齐、content/card 层级、操作区、表格滚动及抽屉边界。页面清单和每页的主要状态以[管理后台页面覆盖矩阵](official-page-coverage-matrix.md)为准。
 
 ## 8. 测试与完成清单
 
-纯逻辑与 hook 用 Vitest；查询参数、请求体、精确失效、字段错误与权限矩阵用页面集成测试；至少一个关键正向路径和一个空数据/失败/无权限路径用 E2E。关键页面截图断言见 [visual.spec.ts](../e2e/visual.spec.ts)；普通 `page.screenshot` 只供诊断，不是像素回归。基线按 `chromium-linux` 命名，须在 Playwright `1.63.0` Linux 镜像内生成：将仓库挂载到 `/workspace`，启动 `pnpm dev --host 0.0.0.0`，再设置 `PLAYWRIGHT_BASE_URL=http://host.docker.internal:5173` 并运行 `pnpm exec playwright test e2e/visual.spec.ts --update-snapshots`。视觉基线更新须审查差异并和页面修改一起提交；CI 失败时下载 `playwright-diagnostics` 检查 actual/expected/diff 与 trace。
+纯逻辑与 hook 用 Vitest；查询参数、请求体、精确失效、字段错误与权限矩阵用页面集成测试；至少一个关键正向路径和一个空数据/失败/无权限路径用 E2E。关键页面截图断言见 [visual.spec.ts](../e2e/visual.spec.ts)；普通 `page.screenshot` 只供诊断，不是像素回归。基线按 `chromium-linux` 命名，须在 Playwright `1.63.0` Linux 镜像内生成：将仓库挂载到 `/workspace`，启动 `pnpm dev --host 0.0.0.0`，设置 `PLAYWRIGHT_BASE_URL=http://host.docker.internal:5173`，并运行受 Linux 环境检查保护的 `pnpm e2e:visual:update`。视觉基线更新须审查差异并和页面修改一起提交；CI 失败时下载 `playwright-diagnostics` 检查 actual/expected/diff 与 trace。
 
 新增页面合并前逐项检查：
 
@@ -92,10 +108,13 @@ content 外边距由外层布局统一提供，页面不要重复增加大块 pa
 - [ ] 新接口先更新 OpenAPI 并运行 `pnpm generate:api`、`pnpm check:api`；页面不直接用 Axios，也不修改生成目录。
 - [ ] 列表查询、分页基数、排序、URL 中可分享状态与敏感关键词隔离正确；mutation 有提交中状态，成功后精确失效，失败保留上下文。
 - [ ] loading、背景刷新、空数据、失败重试、401、403、字段错误、5xx 与 traceId 各有合理处理。
-- [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用；展开与折叠菜单中的一级 SVG 均有可见尺寸，折叠图标位于侧栏范围内；表头字号/字重与页面密度约定一致，默认表头颜色在原生 Table 与 DataTable 间一致。
+- [ ] 使用 `panel-card`、`QueryForm`、`DataTable`、`CrudDrawer` 等共享原语；公共色彩和边界来自主题 token，未新增通用硬编码颜色。
+- [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用；窄屏已选择横向滚动或摘要卡片策略，长文本不会逐字竖排、裁切或覆盖操作。
+- [ ] 桌面端查询筛选项与操作按钮水平对齐，权限条件按钮保留间距；校验提示和条件切换不会造成控件错位或重叠；多值标签列不会压入相邻列。
+- [ ] 浅色、暗色、色弱模式和 English 的标题、操作、状态、表单和弹层可读；展开与折叠菜单中的一级 SVG 均有可见尺寸，折叠图标位于侧栏范围内；表头字号/字重与页面密度约定一致，默认表头颜色在原生 Table 与 DataTable 间一致。
 - [ ] 纯逻辑单测、请求/权限集成测试、关键正向与异常 E2E 以及必要视觉基线通过；Java 服务端另行验证接口鉴权和数据范围。
 
-本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e:functional`；Playwright fixture 会把未预期的 page error、console error 和 React key 警告作为失败证据。视觉回归单独执行 `pnpm e2e:visual`，需要更新 Linux 基线时使用 `pnpm e2e:visual:update` 并审查差异；macOS 本地不能替代 Linux 快照环境，不能直接更新基线，`pnpm e2e:check-env` 在非 Linux/Node 22 环境失败属于预期；契约变更再执行 `pnpm check:api`。
+本地验证命令：`pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm test:coverage:check`、`pnpm build`、`pnpm e2e:functional`；Playwright fixture 会把未预期的 page error、console error 和 React key 警告作为失败证据。视觉回归单独执行 `pnpm e2e:visual`，需要更新 Linux 基线时使用 `pnpm e2e:visual:update` 并审查差异；macOS 可以运行不依赖快照的布局、主题和语言断言，但不能生成或更新 Linux 快照，`pnpm e2e:check-env` 在非 Linux/Node 22 环境失败属于预期；契约变更再执行 `pnpm check:api`。
 
 E2E 运行前可执行 `pnpm e2e:check-env` 检查 Linux、Node 主版本、Playwright 项目、视口和缩放基线。普通 `e2e:functional`/`e2e:visual` 不更新快照；快照只能通过 Linux 环境中的 `pnpm e2e:visual:update` 显式更新并审查差异。
 
