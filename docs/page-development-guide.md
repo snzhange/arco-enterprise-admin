@@ -18,7 +18,7 @@
 { kind: 'page', path: '/users', component: UsersPage, messageKey: 'menu.system.users', permission: { all: [PERMISSIONS.usersRead] } },
 ```
 
-普通分组页默认显示面包屑；仅不希望显示时设置 `breadcrumb: false`。受保护但不进菜单的页面放在 `hiddenProtectedRoutes`，设 `menu: false`，需要标题时仍登记 `messageKey`。登录等公开页放 `publicRouteManifest`；`/` 之类的入口跳转放 `redirectRouteManifest`。未声明路径走 404；已登录但权限不足走 403，会话 401 走登录流程。这些边界见 [路由测试](../src/app/route-manifest.test.tsx) 与 [E2E](../e2e/admin.spec.ts)。
+普通分组页默认显示面包屑；仅不希望显示时设置 `breadcrumb: false`。受保护但不进菜单的页面放在 `hiddenProtectedRoutes`，设 `menu: false`，需要标题时仍登记 `messageKey`。详情、编辑等下级页面用 `parent` 指向所属菜单页（如 `{ path: '/orders/:id', menu: false, parent: '/orders' }`）：它归入父页面的分组并沿用分组权限，菜单高亮父项，面包屑多显示一级父页面。路径可以带 `:param`，精确路径优先于带参数的路径，`/orders/new` 不会被 `/orders/:id` 匹配走。登录等公开页放 `publicRouteManifest`；`/` 之类的入口跳转放 `redirectRouteManifest`，其中 `/` 会按当前用户权限解析到第一个可访问的菜单页，其它入口直接使用 `to`。浏览器标签页标题由 `useDocumentTitle` 按 `messageKey` 统一设置为“页面名 - 品牌名”，页面不要自己改 `document.title`。未声明路径走 404；已登录但权限不足走 403，一个权限都没有的用户显示“账号待开通”，会话 401 走登录流程。这些边界见 [路由测试](../src/app/route-manifest.test.tsx) 与 [E2E](../e2e/admin.spec.ts)。
 
 ## 3. OpenAPI、请求与缓存
 
@@ -63,7 +63,7 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 ```
 
 - [QueryForm](../src/components/data/QueryForm.tsx) 需要 Arco `form` 实例、显式表单项、`onSubmit` 和 `onReset`；可用 `advancedChildren`/`expanded`/`onExpandedChange` 展开高级查询。组件不自动生成字段或发请求。
-- [DataTable](../src/components/data/DataTable.tsx) 需要 `rowKey`、`columns` 和 `data`；分页通过 `{ current, pageSize, total, onChange }` 显式控制，另可传 `toolbar`、`batchActions`、`onRefresh`、`rowSelection`、`onTableChange`、`error`/`onRetry`。初次加载、空结果与背景刷新由页面状态和表格共同处理。窄屏保持横向滚动：共享的 `.data-table-scroll` 提供键盘焦点和 `aria-label`，390px 断点显示滚动提示；长文本列使用省略和 `title` 或详情抽屉查看完整值，不要让中文逐字换行。
+- [DataTable](../src/components/data/DataTable.tsx) 需要 `rowKey`、`columns` 和 `data`；分页通过 `{ current, pageSize, total, onChange }` 显式控制，另可传 `toolbar`、`batchActions`、`onRefresh`、`rowSelection`、`onTableChange`、`error`/`onRetry`；长文本列较多时传 `tableLayoutFixed`，让列宽按 `columns` 分配而不被内容撑开；树形数据可用 `expandedRowKeys`/`onExpandedRowsChange` 受控展开。初次加载、空结果与背景刷新由页面状态和表格共同处理。窄屏保持横向滚动：共享的 `.data-table-scroll` 提供键盘焦点和 `aria-label`（方向键、PageUp/PageDown、Home/End 可滚动），溢出时显示同步的 `.data-table-scrollbar` 可见拖拽条；浏览器原生滚动条已隐藏，页面不要再恢复或另造一套。390px 断点显示滚动提示，文案可用 `scrollHint` 覆盖。长文本列使用省略和 `title` 或详情抽屉查看完整值，不要让中文逐字换行。右侧固定操作列须为所有权限条件下可能显示的操作预留足够宽度，保证按钮完整显示且不被裁切。
 - 新增/编辑抽屉用 [CrudDrawer](../src/components/form/CrudDrawer.tsx)：`visible`、`title`、`onCancel`、`onConfirm` 和 `children` 必填；`confirmLoading`、`confirmDisabled`、`afterClose` 可选，默认宽 520。表单校验、创建/更新 mutation、取消与成功关闭由页面显式处理，失败时保留表单。
 - 详情字段使用 [DetailPanel](../src/components/data/DetailPanel.tsx) 的 `items: { key, label, value, span? }[]`，与表格列分开维护；详情抽屉由页面使用 Arco Drawer 控制。如果只有只读详情，不需要 CrudDrawer。
 - 需要独立状态时使用 [PageState](../src/components/page/PageState.tsx) 的 `PageLoadingState`、`PageEmptyState`、`PageErrorState`（`error`、可选 `onRetry`）、`PageForbiddenState`，避免在错误时显示“暂无数据”。
@@ -74,7 +74,7 @@ manifest 的 `permission: { all: [...] }` 或 `any` 管页面入口；[Permissio
 
 [ApiError](../src/api/errors.ts) 以 `kind` 区分 `validation`、`unauthenticated`、`forbidden`、`not-found`、`network`、`timeout`、`server`、`unknown`，并保存可用的 `code`、`traceId`、`fieldErrors`。查询失败按状态显示重试；已有数据的后台刷新保留上下文。成功但无结果才显示空态；取消请求不提示。400/422 的字段错误通过 `applyFieldErrors(form, error)` 映射到 Arco Form，并保留表单级 detail；403 保留当前上下文并告知权限不足；5xx 展示可用诊断编号及重试。
 
-会话探测 401 才表示未登录；会话网络/5xx 显示重试，业务请求 401 走统一过期协调器，页面不要自行跳转登录。调用 `getErrorMessage`/`toApiError`，不要再解读 Axios response。测试参考 [请求层用例](../src/api/http.test.ts) 和 [用户页用例](../src/pages/UsersPage.test.tsx)。
+会话探测 401 才表示未登录；会话网络/5xx 显示重试，业务请求 401 走统一过期协调器，页面不要自行跳转登录。会话由服务端在认证请求上滑动续期，`GET /api/auth/session` 返回 `expiresAt`（空闲到期）和 `absoluteExpiresAt`（绝对上限）；前端每 5 分钟轮询该接口，页面回到前台时立即刷新，到期前 2 分钟由 `SessionExpiryWatcher` 提示续期，到达绝对上限时只提供重新登录。页面不要自己实现续期或过期弹窗。文件下载使用 `responseType: 'blob'` 时，请求层会把 JSON 格式的错误 Blob 解析回 Problem Details，页面照常用 `getErrorMessage` 读取服务端 detail。调用 `getErrorMessage`/`toApiError`，不要再解读 Axios response。测试参考 [请求层用例](../src/api/http.test.ts) 和 [用户页用例](../src/pages/UsersPage.test.tsx)。
 
 ## 7. 统一 UI、视觉和可访问性
 
@@ -88,7 +88,7 @@ UI 一致性规则适用于已有页面和新页面：
 - 桌面端查询表单的筛选项与查询/重置操作应保持同一水平基线；操作按钮之间使用明确间距，即使按钮由权限条件渲染也不能贴合或重叠。校验提示或条件字段切换不能把同行控件推到不同基线；字段高度不稳定时使用纵向表单或网格，并将操作区放到字段区下方、设置明确间距。
 - 表格含多个角色、权限或其他标签值时，为该列和表格设置可验证的宽度约束；标签不得覆盖相邻列。长标签单行省略并提供 `title` 或详情入口，窄屏保留横向滚动。
 - 业务名称、编码、说明、权限代码、JSON 和 Trace ID 等长值不能撑开布局；摘要文本省略时必须提供 `title`、详情抽屉或其他可访问的完整值入口。
-- 页面覆盖浅色、暗色、色弱模式和 English；静态标题、表头、按钮、状态、空态、校验和反馈都从消息资源读取。服务端返回的业务名称和诊断 detail 保留原值，不把它们误当成本地化文案。
+- 页面覆盖浅色、暗色、色弱模式和 English；静态标题、表头、按钮、状态、空态、校验和反馈都从消息资源读取。共享组件（`QueryForm`、`DataTable`、`CrudDrawer`、`DetailPanel`、`PageState`）的默认文案已在 [中英文词条](../src/app/i18n/messages.ts) 中登记，组件内不要再写死中文默认值；`enUSMessages` 的类型要求每个 key 都有英文，漏写会在类型检查时失败。服务端返回的业务名称和诊断 detail 保留原值，不把它们误当成本地化文案。
 
 背景层级必须清晰且遵循主题 token：`body` 使用 `--color-bg-1`，应用 content canvas 使用 `--color-fill-2`，Card 使用 `--color-bg-2`，Card 以 `--color-border` 或 `--color-border-1` 提供可见的 1px 边界。不得把 body、canvas 和 Card 都设成相同灰色，也不要用弱阴影代替卡片边界；优先复用全局 token，不在页面硬编码通用背景或边框色。菜单分组与子项的文字起点和基线保持一致，图标占用固定宽度的槽位。Arco 会给一级菜单图标默认添加 `margin-right: 16px`，若槽位也是紧凑宽度，低优先级覆盖会把 SVG 挤到几乎不可见；图标槽位规则必须以足够优先级将右边距归零，并验证展开态 SVG 宽度。折叠时 Arco 会把一级菜单切换到弹出式标题，并默认给图标设置 `margin-right: 100vw` 来隐藏文本；自定义图标包装后必须覆盖该边距、隐藏文字并将 SVG 保持在固定 40px 标题区域内，同时验证图标在 48px 侧栏中居中且可见。
 
@@ -111,6 +111,8 @@ UI 一致性规则适用于已有页面和新页面：
 - [ ] 使用 `panel-card`、`QueryForm`、`DataTable`、`CrudDrawer` 等共享原语；公共色彩和边界来自主题 token，未新增通用硬编码颜色。
 - [ ] 1440px、900px、390px 的响应式布局及键盘操作、label、图标说明和焦点行为可用；窄屏已选择横向滚动或摘要卡片策略，长文本不会逐字竖排、裁切或覆盖操作。
 - [ ] 桌面端查询筛选项与操作按钮水平对齐，权限条件按钮保留间距；校验提示和条件切换不会造成控件错位或重叠；多值标签列不会压入相邻列。
+- [ ] 表格横向溢出时，可见滚动条可用鼠标拖拽、键盘操作且与表格位置同步；右侧固定操作列中的所有按钮均完整显示。
+- [ ] 下级页面登记了 `parent`，菜单高亮父项、面包屑和浏览器标题正确。
 - [ ] 浅色、暗色、色弱模式和 English 的标题、操作、状态、表单和弹层可读；展开与折叠菜单中的一级 SVG 均有可见尺寸，折叠图标位于侧栏范围内；表头字号/字重与页面密度约定一致，默认表头颜色在原生 Table 与 DataTable 间一致。
 - [ ] 纯逻辑单测、请求/权限集成测试、关键正向与异常 E2E 以及必要视觉基线通过；Java 服务端另行验证接口鉴权和数据范围。
 

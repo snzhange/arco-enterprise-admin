@@ -71,13 +71,32 @@ export function request<T>(
   return httpClient
     .request<T>({ ...baseConfig, ...axiosOptions })
     .then(response => response.data)
-    .catch((cause: unknown) => {
+    .catch(async (cause: unknown) => {
+      await readBlobProblem(cause)
       const error = toApiError(cause)
       if (error.kind === 'unauthenticated' && policy === 'business' && !suppressSessionExpiry)
         notifySessionExpired(error)
       onApiError?.(error)
       throw error
     })
+}
+
+/**
+ * File downloads use responseType 'blob', so an error's Problem Details arrive as a Blob. Parse it in place so the
+ * caller sees the server's detail instead of a generic title. Anything that is not JSON is left untouched.
+ */
+async function readBlobProblem(cause: unknown) {
+  if (!axios.isAxiosError(cause) || !cause.response || !(cause.response.data instanceof Blob))
+    return
+  const data = cause.response.data
+  if (!/json/i.test(data.type))
+    return
+  try {
+    cause.response.data = JSON.parse(await data.text())
+  }
+  catch {
+    // Keep the Blob; the error falls back to the status-based title.
+  }
 }
 
 export type ErrorType<_T = unknown> = ReturnType<typeof toApiError> & { cause: unknown }

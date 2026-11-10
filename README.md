@@ -51,6 +51,7 @@ pnpm dev
 ```text
 列表账号：list-reader@arco.dev / listreader1234（仅 list:read）
 个人中心账号：user-reader@arco.dev / userreader1234（仅 user:read）
+待开通账号：pending@arco.dev / pending1234（没有任何权限，显示“账号待开通”）
 ```
 
 路由、菜单、面包屑和页面权限统一登记在 `src/app/route-manifest.tsx`；新增受保护页面时无需再维护 pathname 权限映射。

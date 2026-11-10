@@ -13,6 +13,8 @@ export interface RouteManifestPage {
   kind: 'page'
   menu?: boolean
   messageKey?: MessageKey
+  /** 下级页面（详情、编辑）所属的菜单页，用于菜单高亮、面包屑和所属分组 */
+  parent?: RoutePath
   path: RoutePath
   permission?: PermissionRequirement
 }
@@ -47,6 +49,7 @@ export interface NavigationItem {
   breadcrumb?: boolean
   key: RoutePath
   messageKey: MessageKey
+  parent?: RoutePath
   permission?: PermissionRequirement
 }
 

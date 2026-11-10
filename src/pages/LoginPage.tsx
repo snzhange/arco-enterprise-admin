@@ -60,7 +60,9 @@ export function LoginPage() {
               ? 'list-reader'
               : email === 'user-reader@arco.dev'
                 ? 'user-reader'
-                : 'admin'
+                : email === 'pending@arco.dev'
+                  ? 'pending'
+                  : 'admin'
           setMockSession(role)
         }
         await clearSessionCache(queryClient)

@@ -8,10 +8,12 @@ import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react
 import { toApiError } from '@/api/errors'
 import { useGetCurrentUser } from '@/api/generated/admin-api'
 import { AuthProvider, useAuth } from '@/app/auth'
+import { useDocumentTitle } from '@/app/document-title'
 import { RouteErrorBoundary } from '@/app/ErrorBoundary'
 import { LoadingScreen } from '@/app/LoadingScreen'
 import {
   canAccessRoute,
+  getDefaultLandingPath,
   protectedRouteMatches,
   publicRouteManifest,
   redirectRouteManifest,
@@ -19,14 +21,27 @@ import {
 } from '@/app/route-manifest'
 import { clearSessionCache } from '@/app/session-cache'
 import { configureSessionExpiredHandler, toSafeReturnPath } from '@/app/session-expired'
+import { SessionExpiryWatcher } from '@/app/session-expiry'
 import { SessionErrorState } from '@/app/SessionErrorState'
 import { AccessDenied } from '@/components/AccessDenied'
+import { AccountPending } from '@/components/AccountPending'
 import { AppLayout } from '@/components/AppLayout'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
 function PermissionRoute({ children, match }: { children: ReactNode, match: RouteMatch }) {
   const user = useAuth()
-  return canAccessRoute(user, match) ? children : <AccessDenied />
+  if (canAccessRoute(user, match))
+    return children
+  return user.permissions.length === 0 ? <AccountPending /> : <AccessDenied />
+}
+
+/** Root path: go to the first page the user can actually open instead of a fixed dashboard. */
+function LandingRedirect() {
+  const user = useAuth()
+  const path = getDefaultLandingPath(user)
+  if (path)
+    return <Navigate to={path} replace />
+  return user.permissions.length === 0 ? <AccountPending /> : <AccessDenied />
 }
 
 function ManifestPage({ match }: { match: RouteMatch }) {
@@ -45,7 +60,9 @@ function ManifestPage({ match }: { match: RouteMatch }) {
 function ProtectedLayout() {
   const location = useLocation()
   const session = useGetCurrentUser({
-    query: { retry: false },
+    // The server renews the idle window on authenticated requests, so polling keeps an active tab alive.
+    // Background tabs pause by default and refetch as soon as the tab becomes visible again.
+    query: { retry: false, refetchInterval: 5 * 60_000, refetchOnWindowFocus: true },
     request: { errorPolicy: 'session', suppressSessionExpiry: true },
   })
 
@@ -60,7 +77,12 @@ function ProtectedLayout() {
     return <SessionErrorState error={error} onRetry={() => void session.refetch()} />
   }
 
-  return <AuthProvider user={session.data}><Outlet /></AuthProvider>
+  return (
+    <AuthProvider user={session.data}>
+      <SessionExpiryWatcher />
+      <Outlet />
+    </AuthProvider>
+  )
 }
 
 function SessionExpiredBridge() {
@@ -83,6 +105,8 @@ function LazyPage({ children }: { children: ReactNode }) {
 }
 
 export function AppRoutes() {
+  useDocumentTitle()
+
   return (
     <>
       <SessionExpiredBridge />
@@ -94,7 +118,7 @@ export function AppRoutes() {
           <Route element={<AppLayout />}>
             {redirectRouteManifest.map(route => (
               route.path === '/'
-                ? <Route key={route.path} index element={<Navigate to={route.to} replace />} />
+                ? <Route key={route.path} index element={<LandingRedirect />} />
                 : <Route key={route.path} path={toNestedRoutePath(route.path)} element={<Navigate to={route.to} replace />} />
             ))}
             {protectedRouteMatches.map(match => (

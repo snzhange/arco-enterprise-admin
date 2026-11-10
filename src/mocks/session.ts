@@ -3,7 +3,7 @@
 const MOCK_SESSION_COOKIE = 'arco_mock_session'
 const MOCK_ROLE_COOKIE = 'arco_mock_role'
 
-export type MockRole = 'admin' | 'operator' | 'list-reader' | 'user-reader'
+export type MockRole = 'admin' | 'operator' | 'list-reader' | 'user-reader' | 'pending'
 
 export function clearMockSession(): void {
   document.cookie = `${MOCK_SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`

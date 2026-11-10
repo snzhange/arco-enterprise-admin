@@ -2,6 +2,7 @@ import type { DescriptionsProps } from '@arco-design/web-react'
 import type { ReactNode } from 'react'
 
 import { Descriptions } from '@arco-design/web-react'
+import { useLocale } from '@/app/i18n'
 import { PageEmptyState, PageErrorState, PageLoadingState } from '@/components/page/PageState'
 
 export interface DetailDescriptor {
@@ -20,13 +21,14 @@ export interface DetailPanelProps {
   column?: DescriptionsProps['column']
 }
 
-export function DetailPanel({ items = [], loading = false, error, emptyTitle = '暂无详情', column = { xs: 1, md: 2 } }: DetailPanelProps) {
+export function DetailPanel({ items = [], loading = false, error, emptyTitle, column = { xs: 1, md: 2 } }: DetailPanelProps) {
+  const t = useLocale()
   if (loading)
-    return <PageLoadingState label="正在加载详情..." />
+    return <PageLoadingState label={t('detail.loading')} />
   if (error)
-    return <PageErrorState error={error} title="详情加载失败" />
+    return <PageErrorState error={error} title={t('detail.loadFailed')} />
   if (items.length === 0)
-    return <PageEmptyState title={emptyTitle} compact />
+    return <PageEmptyState title={emptyTitle ?? t('detail.empty')} compact />
 
   return (
     <Descriptions

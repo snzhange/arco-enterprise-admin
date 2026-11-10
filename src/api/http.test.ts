@@ -130,3 +130,26 @@ describe('request policies', () => {
     expect(onApiError).toHaveBeenCalledWith(expect.objectContaining({ detail: '邮箱已经存在' }))
   })
 })
+
+describe('blob error bodies', () => {
+  it('reads Problem Details from a JSON Blob so downloads report the server detail', async () => {
+    const body = new Blob([JSON.stringify({ title: '上游服务错误', detail: '导出行数超过上限' })], { type: 'application/problem+json' })
+    vi.spyOn(httpClient, 'request').mockRejectedValue(axiosError(502, body))
+
+    await expect(request({ url: '/api/download', method: 'GET', responseType: 'blob' })).rejects.toMatchObject({
+      kind: 'server',
+      detail: '导出行数超过上限',
+    })
+  })
+
+  it('leaves non-JSON and malformed Blobs to the status-based title', async () => {
+    vi.spyOn(httpClient, 'request')
+      .mockRejectedValueOnce(axiosError(502, new Blob(['<html>bad gateway</html>'], { type: 'text/html' })))
+      .mockRejectedValueOnce(axiosError(502, new Blob(['{not json'], { type: 'application/json' })))
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const error = await request({ url: '/api/download', method: 'GET' }).catch((cause: unknown) => cause)
+      expect(error).toMatchObject({ kind: 'server', detail: undefined })
+    }
+  })
+})

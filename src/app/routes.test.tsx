@@ -1,7 +1,7 @@
 import type { ApiError } from '@/api/errors'
 import type { CurrentUser } from '@/api/generated/models'
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -86,6 +86,31 @@ describe('protected route session states', () => {
 
     expect(await screen.findByText('欢迎使用 Arco Design Pro', { exact: true })).toBeVisible()
     expect(screen.getByTestId('location-probe')).toHaveTextContent('/welcome')
+  })
+
+  it('resolves the root path to the first page the signed-in user can access', async () => {
+    apiMocks.useGetCurrentUser.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: { ...currentUser, permissions: ['list:read'], roleCodes: ['list-reader'], dataScope: 'self' },
+    })
+
+    renderRoutes('/')
+
+    await waitFor(() => expect(screen.getByTestId('location-probe')).toHaveTextContent('/list/search-table'))
+  })
+
+  it('shows the pending account state when no permission is granted', async () => {
+    apiMocks.useGetCurrentUser.mockReturnValue({
+      isPending: false,
+      isError: false,
+      data: { ...currentUser, permissions: [], roleCodes: [] },
+    })
+
+    renderRoutes('/')
+
+    expect(await screen.findByText('账号待开通')).toBeVisible()
+    expect(screen.getByTestId('location-probe')).toHaveTextContent(/^\/null$/)
   })
 
   it('redirects an unauthenticated user to login with a safe return path', async () => {

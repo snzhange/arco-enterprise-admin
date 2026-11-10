@@ -136,4 +136,15 @@ export const MOCK_USERS: Record<string, CurrentUser> = {
     roleCodes: ['role-reader'],
     dataScope: 'self',
   },
+  // Signed in through the identity provider but not granted anything yet; shows the account pending page.
+  'pending': {
+    id: '00000000-0000-4000-8000-000000000006',
+    displayName: '待开通用户',
+    email: 'pending@arco.dev',
+    avatarUrl: null,
+    permissions: [],
+    roleCodes: [],
+    dataScope: 'self',
+    contactUrl: 'https://arco.design',
+  },
 }

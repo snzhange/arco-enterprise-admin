@@ -37,6 +37,9 @@ const initialCurrentUser = MOCK_USERS.admin
 
 let currentUser: CurrentUser = initialCurrentUser
 
+const MOCK_SESSION_TTL_MS = 30 * 60_000
+const MOCK_SESSION_MAX_TTL_MS = 12 * 60 * 60_000
+
 function getCurrentUser(request?: Request): CurrentUser {
   const role = request?.headers.get('X-Mock-Role') || request?.headers.get('cookie')?.match(/arco_mock_role=([^;]+)/)?.[1]
   return (role && MOCK_USERS[role]) || currentUser
@@ -250,7 +253,15 @@ export const handlers = [
         traceId: 'session-500',
       }, 500)
     }
-    return hasSession(request) ? HttpResponse.json(getCurrentUser(request)) : unauthorized()
+    if (!hasSession(request))
+      return unauthorized()
+    // Mirror the server's idle window and absolute cap so SessionExpiryWatcher has deadlines to work with.
+    const now = Date.now()
+    return HttpResponse.json({
+      ...getCurrentUser(request),
+      expiresAt: new Date(now + MOCK_SESSION_TTL_MS).toISOString(),
+      absoluteExpiresAt: new Date(now + MOCK_SESSION_MAX_TTL_MS).toISOString(),
+    })
   }),
   http.post('*/api/auth/login', async ({ request }) => {
     const body = await request.json() as LoginRequest
@@ -277,6 +288,13 @@ export const handlers = [
     }
     if (body.email === 'user-reader@arco.dev' && body.password === 'userreader1234') {
       currentUser = MOCK_USERS['user-reader']
+      return new HttpResponse(null, {
+        status: 204,
+        headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },
+      })
+    }
+    if (body.email === 'pending@arco.dev' && body.password === 'pending1234') {
+      currentUser = MOCK_USERS.pending
       return new HttpResponse(null, {
         status: 204,
         headers: { 'Set-Cookie': `${AUTH_COOKIE}=1; Path=/; SameSite=Lax` },

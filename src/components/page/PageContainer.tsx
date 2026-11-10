@@ -6,12 +6,13 @@ import { useId } from 'react'
 const { Text, Title } = Typography
 
 export interface PageContainerProps {
-  title: ReactNode
+  title?: ReactNode
   description?: ReactNode
   eyebrow?: ReactNode
   actions?: ReactNode
   children: ReactNode
   className?: string
+  showHeader?: boolean
 }
 
 export function PageContainer({
@@ -21,15 +22,20 @@ export function PageContainer({
   actions,
   children,
   className,
+  showHeader = true,
 }: PageContainerProps) {
   const titleId = useId()
+  const hasHeader = showHeader && (title || description || eyebrow || actions)
+
+  if (!hasHeader)
+    return <>{children}</>
 
   return (
-    <section className={['page-container', 'page-container-primitive', className].filter(Boolean).join(' ')} aria-labelledby={titleId}>
+    <section className={['page-container', 'page-container-primitive', className].filter(Boolean).join(' ')} aria-labelledby={title ? titleId : undefined}>
       <header className="page-heading page-container-heading">
         <div>
           {eyebrow && <Text className="eyebrow">{eyebrow}</Text>}
-          <Title id={titleId} heading={2}>{title}</Title>
+          {title && <Title id={titleId} heading={2}>{title}</Title>}
           {description && <Text type="secondary">{description}</Text>}
         </div>
         {actions && <div className="page-container-actions">{actions}</div>}

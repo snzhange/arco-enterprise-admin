@@ -32,6 +32,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLogout } from '@/api/generated/admin-api'
 import { useAuth } from '@/app/auth'
 import { useLocale } from '@/app/i18n'
+import { enUSMessages, zhCNMessages } from '@/app/i18n/messages'
 import { getNavigationGroup, getNavigationItem, getVisibleNavigationGroups } from '@/app/route-manifest'
 import { clearSessionCache } from '@/app/session-cache'
 import { resetSessionExpired } from '@/app/session-expired'
@@ -40,6 +41,7 @@ import { THEME_COLORS } from '@/app/settings/constants'
 import arcoProLogo from '@/assets/arco-pro-logo.svg'
 import { clearMockSession } from '@/mocks/session'
 
+import { EnvironmentTag } from './EnvironmentTag'
 import { NotificationPanel } from './NotificationPanel'
 import { SettingsDrawer } from './SettingsDrawer'
 
@@ -58,6 +60,7 @@ export function AppLayout() {
   const currentGroup = getNavigationGroup(location.pathname)
   const currentGroupKey = currentGroup?.key
   const currentItem = getNavigationItem(location.pathname)
+  const parentItem = currentItem?.parent ? getNavigationItem(currentItem.parent) : undefined
   const visibleNavigationGroups = getVisibleNavigationGroups(user)
   const [collapsed, setCollapsed] = useState(false)
   const [navigationState, setNavigationState] = useState(() => ({
@@ -83,7 +86,7 @@ export function AppLayout() {
         resetSessionExpired()
         navigate('/login', { replace: true })
       },
-      onError: () => Message.error('退出失败，请稍后重试'),
+      onError: () => Message.error(t('navbar.logout.error')),
     },
     request: { errorPolicy: 'logout', suppressSessionExpiry: true },
   })
@@ -142,6 +145,11 @@ export function AppLayout() {
                   </Link>
                 </div>
                 <ul className="navbar-right">
+                  {(user.environmentName || user.environment) && (
+                    <li className="navbar-environment">
+                      <EnvironmentTag environment={user.environment} environmentName={user.environmentName} />
+                    </li>
+                  )}
                   <li className="navbar-search-item">
                     <Input.Search className="navbar-search" placeholder={t('navbar.search.placeholder')} allowClear />
                   </li>
@@ -165,7 +173,7 @@ export function AppLayout() {
                       triggerProps={{ autoAlignPopupWidth: false, autoAlignPopupMinWidth: true, position: 'br' }}
                       onChange={(value) => {
                         setLocale(value as AppLocale)
-                        Message.info(value === 'zh-CN' ? '语言已切换至简体中文' : 'Language switched to English')
+                        Message.info(value === 'zh-CN' ? zhCNMessages['navbar.language.changed'] : enUSMessages['navbar.language.changed'])
                       }}
                     />
                   </li>
@@ -234,7 +242,7 @@ export function AppLayout() {
             <Menu
               className="app-menu"
               collapse={collapsed}
-              selectedKeys={[location.pathname]}
+              selectedKeys={[currentItem?.parent ?? location.pathname]}
               openKeys={menuOpenKeys}
               onClickMenuItem={key => navigate(key)}
               onClickSubMenu={(_, keys) => setNavigationState(state => ({ ...state, openKeys: keys }))}
@@ -264,7 +272,7 @@ export function AppLayout() {
           <button
             className="collapse-btn"
             type="button"
-            aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
+            aria-label={collapsed ? t('layout.sider.expand') : t('layout.sider.collapse')}
             onClick={() => setCollapsed(value => !value)}
           >
             {collapsed ? <IconMenuUnfold /> : <IconMenuFold />}
@@ -279,6 +287,7 @@ export function AppLayout() {
               <Breadcrumb className="layout-breadcrumb">
                 <Breadcrumb.Item>{currentGroup.icon}</Breadcrumb.Item>
                 <Breadcrumb.Item>{t(currentGroup.messageKey)}</Breadcrumb.Item>
+                {parentItem && currentItem && parentItem.messageKey !== currentItem.messageKey && <Breadcrumb.Item>{t(parentItem.messageKey)}</Breadcrumb.Item>}
                 <Breadcrumb.Item>{currentItem && t(currentItem.messageKey)}</Breadcrumb.Item>
               </Breadcrumb>
             )}

@@ -18,4 +18,29 @@ export interface CurrentUser {
   permissions: PermissionCode[];
   roleCodes: RoleCode[];
   dataScope: DataScope;
+  /**
+     * 账号没有任何权限时，“账号待开通”页面联系管理员的链接；为空时不显示按钮。
+     * @nullable
+     */
+  contactUrl?: string | null;
+  /**
+     * 当前会话的空闲到期时间；服务端在认证请求上滑动续期。
+     * @nullable
+     */
+  expiresAt?: string | null;
+  /**
+     * 会话的绝对上限，达到后无论多活跃都必须重新登录。
+     * @nullable
+     */
+  absoluteExpiresAt?: string | null;
+  /**
+     * 当前部署环境编码，例如 prod、staging；以 prod 开头时界面用醒目颜色提示。
+     * @nullable
+     */
+  environment?: string | null;
+  /**
+     * 当前环境的展示名称；为空时回退为 environment。
+     * @nullable
+     */
+  environmentName?: string | null;
 }

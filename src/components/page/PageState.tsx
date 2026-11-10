@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { Button, Empty, Spin, Typography } from '@arco-design/web-react'
 import { getErrorMessage, getTraceMessage, isCancelledError, toApiError } from '@/api/errors'
+import { useLocale } from '@/app/i18n'
 
 const { Text, Title } = Typography
 
@@ -15,17 +16,18 @@ function PageStateFrame({ className, children, compact = false }: PageStateFrame
   return <div className={['page-state', className, compact && 'page-state-compact'].filter(Boolean).join(' ')}>{children}</div>
 }
 
-export function PageLoadingState({ label = '正在加载...' }: { label?: ReactNode }) {
+export function PageLoadingState({ label }: { label?: ReactNode }) {
+  const t = useLocale()
   return (
     <PageStateFrame className="page-state-loading">
       <Spin />
-      <Text type="secondary" aria-live="polite">{label}</Text>
+      <Text type="secondary" aria-live="polite">{label ?? t('pageState.loading')}</Text>
     </PageStateFrame>
   )
 }
 
 export function PageEmptyState({
-  title = '暂无数据',
+  title,
   description,
   action,
   compact,
@@ -35,9 +37,10 @@ export function PageEmptyState({
   action?: ReactNode
   compact?: boolean
 }) {
+  const t = useLocale()
   return (
     <PageStateFrame className="page-state-empty" compact={compact}>
-      <Empty description={title} />
+      <Empty description={title ?? t('pageState.empty')} />
       {description && <Text type="secondary">{description}</Text>}
       {action}
     </PageStateFrame>
@@ -55,6 +58,7 @@ export function PageErrorState({
   compact?: boolean
   title?: ReactNode
 }) {
+  const t = useLocale()
   if (isCancelledError(error))
     return null
 
@@ -67,24 +71,25 @@ export function PageErrorState({
       {title && <Title heading={compact ? 6 : 4}>{title}</Title>}
       <Text role="alert">{message}</Text>
       {traceMessage && <Text type="secondary">{traceMessage}</Text>}
-      {onRetry && <Button type="primary" onClick={onRetry}>重试</Button>}
+      {onRetry && <Button type="primary" onClick={onRetry}>{t('pageState.retry')}</Button>}
     </PageStateFrame>
   )
 }
 
 export function PageForbiddenState({
-  title = '无权访问',
-  description = '请联系管理员申请所需权限。',
+  title,
+  description,
   action,
 }: {
   title?: ReactNode
   description?: ReactNode
   action?: ReactNode
 }) {
+  const t = useLocale()
   return (
     <PageStateFrame className="page-state-forbidden">
-      <Title heading={4}>{title}</Title>
-      <Text type="secondary" role="alert">{description}</Text>
+      <Title heading={4}>{title ?? t('pageState.forbidden.title')}</Title>
+      <Text type="secondary" role="alert">{description ?? t('pageState.forbidden.description')}</Text>
       {action}
     </PageStateFrame>
   )

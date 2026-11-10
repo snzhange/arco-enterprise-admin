@@ -55,11 +55,11 @@ function LocationProbe() {
   )
 }
 
-function renderLayout(client: QueryClient) {
+function renderLayout(client: QueryClient, user: CurrentUser = currentUser) {
   return render(
     <TestQueryClientProvider client={client}>
       <AppSettingsProvider>
-        <AuthProvider user={currentUser}>
+        <AuthProvider user={user}>
           <MemoryRouter initialEntries={['/dashboard/workplace']}>
             <Routes>
               <Route element={<AppLayout />}>
@@ -90,6 +90,26 @@ describe('app layout behavior', () => {
       return { isPending: false, mutate }
     })
     sessionMocks.clearMockSession.mockReset()
+  })
+
+  it('shows the current environment name in the navbar with a production cue', async () => {
+    const user = userEvent.setup()
+    renderLayout(createTestQueryClient(), { ...currentUser, environment: 'prod', environmentName: '生产环境' })
+
+    const environmentTag = await screen.findByText('生产环境')
+    expect(environmentTag).toBeVisible()
+    expect(environmentTag.closest('.arco-tag')).toHaveClass('arco-tag-red')
+    await user.hover(environmentTag)
+    expect(await screen.findByText('当前环境：prod')).toBeVisible()
+  })
+
+  it('falls back to the environment code and hides the tag when no environment is known', async () => {
+    const { unmount } = renderLayout(createTestQueryClient(), { ...currentUser, environment: 'staging', environmentName: null })
+    expect(await screen.findByText('staging')).toBeVisible()
+    unmount()
+
+    const { container } = renderLayout(createTestQueryClient())
+    expect(container.querySelector('.navbar-environment')).toBeNull()
   })
 
   it('allows collapsing the active group while keeping its route selected', async () => {

@@ -2,6 +2,7 @@ import type { DrawerProps } from '@arco-design/web-react'
 
 import type { ReactNode } from 'react'
 import { Drawer } from '@arco-design/web-react'
+import { useLocale } from '@/app/i18n'
 
 export interface CrudDrawerProps {
   visible: boolean
@@ -25,20 +26,22 @@ export function CrudDrawer({
   onConfirm,
   confirmLoading = false,
   confirmDisabled = false,
-  okText = '保存',
-  cancelText = '取消',
+  okText,
+  cancelText,
   width = 520,
   afterClose,
 }: CrudDrawerProps) {
+  const t = useLocale()
   return (
     <Drawer
       visible={visible}
       title={title}
       width={width}
+      className="crud-drawer"
       confirmLoading={confirmLoading}
       okButtonProps={{ disabled: confirmDisabled }}
-      okText={okText}
-      cancelText={cancelText}
+      okText={okText ?? t('crudDrawer.ok')}
+      cancelText={cancelText ?? t('crudDrawer.cancel')}
       onCancel={onCancel}
       onOk={() => {
         void onConfirm()

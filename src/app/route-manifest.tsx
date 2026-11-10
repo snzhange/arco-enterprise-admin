@@ -22,6 +22,7 @@ import {
 } from '@arco-design/web-react/icon'
 
 import { lazy } from 'react'
+import { matchPath } from 'react-router-dom'
 import { clearChunkRetryMarker } from '@/app/error-recovery'
 import { LoginPage } from '@/pages/LoginPage'
 import { canAccess } from './permissions'
@@ -182,13 +183,27 @@ export const redirectRouteManifest = [
   { kind: 'redirect', path: '/dashboard', to: '/dashboard/workplace' },
 ] as const satisfies readonly RouteManifestRedirect[]
 
-export const protectedRouteMatches: RouteMatch[] = [
-  ...routeGroups.flatMap(group => group.children.map(route => ({ group, route }))),
-  ...hiddenProtectedRoutes.map(route => ({ route })),
-]
+/** Hidden pages with a `parent` join that menu page's group, so they share its permission and breadcrumb. */
+export function createRouteMatches(groups: readonly RouteManifestGroup[], hiddenRoutes: readonly RouteManifestPage[]): RouteMatch[] {
+  return [
+    ...groups.flatMap(group => group.children.map(route => ({ group, route }))),
+    ...hiddenRoutes.map(route => ({
+      group: route.parent ? groups.find(group => group.children.some(child => child.path === route.parent)) : undefined,
+      route,
+    })),
+  ]
+}
+
+/** Exact paths win over parameterized ones, so `/users/new` is not swallowed by `/users/:id`. */
+export function findRouteMatch(matches: readonly RouteMatch[], pathname: string): RouteMatch | undefined {
+  return matches.find(match => match.route.path === pathname)
+    ?? matches.find(match => matchPath({ path: match.route.path, end: true }, pathname))
+}
+
+export const protectedRouteMatches: RouteMatch[] = createRouteMatches(routeGroups, hiddenProtectedRoutes)
 
 export function getRouteMatch(pathname: string): RouteMatch | undefined {
-  return protectedRouteMatches.find(match => match.route.path === pathname)
+  return findRouteMatch(protectedRouteMatches, pathname)
 }
 
 export function canAccessRoute(user: CurrentUser | null | undefined, match: RouteMatch): boolean {
@@ -200,13 +215,14 @@ export function toNestedRoutePath(path: string): string {
 }
 
 function toNavigationItem(route: RouteManifestPage): NavigationItem | undefined {
-  if (route.menu === false || !route.messageKey)
+  if (!route.messageKey)
     return undefined
   return {
     key: route.path,
     messageKey: route.messageKey,
     permission: route.permission,
     breadcrumb: route.breadcrumb,
+    parent: route.parent,
   }
 }
 
@@ -217,6 +233,7 @@ function toNavigationGroup(group: RouteManifestGroup, children = group.children)
     icon: group.icon,
     permission: group.permission,
     children: children
+      .filter(route => route.menu !== false)
       .map(toNavigationItem)
       .filter((item): item is NavigationItem => Boolean(item)),
   }
@@ -230,6 +247,11 @@ export function getVisibleNavigationGroups(user: CurrentUser): NavigationGroup[]
       return toNavigationGroup(group, children)
     })
     .filter(group => group.children.length > 0)
+}
+
+/** First menu page the user can open; undefined when no menu page is accessible. */
+export function getDefaultLandingPath(user: CurrentUser): string | undefined {
+  return getVisibleNavigationGroups(user)[0]?.children[0]?.key
 }
 
 export function getNavigationGroup(pathname: string): NavigationGroup | undefined {

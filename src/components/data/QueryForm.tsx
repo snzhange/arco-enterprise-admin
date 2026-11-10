@@ -3,6 +3,7 @@ import type { FormInstance, FormProps } from '@arco-design/web-react'
 import type { ReactNode } from 'react'
 import { Button, Form, Space } from '@arco-design/web-react'
 import { IconDown, IconRefresh, IconSearch, IconUp } from '@arco-design/web-react/icon'
+import { useLocale } from '@/app/i18n'
 
 export interface QueryFormProps<TForm extends object> {
   form: FormInstance<TForm>
@@ -20,6 +21,9 @@ export interface QueryFormProps<TForm extends object> {
   submitLabel?: ReactNode
   resetLabel?: ReactNode
   actions?: ReactNode
+  expandLabel?: ReactNode
+  collapseLabel?: ReactNode
+  initialValues?: FormProps<TForm>['initialValues']
 }
 
 export function QueryForm<TForm extends object>({
@@ -35,11 +39,19 @@ export function QueryForm<TForm extends object>({
   className,
   layout = 'inline',
   labelAlign,
-  submitLabel = '查询',
-  resetLabel = '重置',
+  submitLabel,
+  resetLabel,
   actions,
+  expandLabel,
+  collapseLabel,
+  initialValues,
 }: QueryFormProps<TForm>) {
+  const t = useLocale()
   const hasAdvancedFields = Boolean(advancedChildren)
+  const visibleSubmitLabel = submitLabel ?? t('queryForm.submit')
+  const visibleResetLabel = resetLabel ?? t('queryForm.reset')
+  const visibleExpandLabel = expandLabel ?? t('queryForm.expand')
+  const visibleCollapseLabel = collapseLabel ?? t('queryForm.collapse')
 
   return (
     <Form<TForm>
@@ -47,6 +59,7 @@ export function QueryForm<TForm extends object>({
       layout={layout}
       labelAlign={labelAlign}
       className={['query-form', className].filter(Boolean).join(' ')}
+      initialValues={initialValues}
       onSubmit={onSubmit}
     >
       <div className="query-form-fields">
@@ -55,7 +68,7 @@ export function QueryForm<TForm extends object>({
       </div>
       <div className="query-form-actions">
         <Space wrap>
-          <Button type="primary" htmlType="submit" loading={loading} icon={<IconSearch />}>{submitLabel}</Button>
+          <Button type="primary" htmlType="submit" loading={loading} icon={<IconSearch />}>{visibleSubmitLabel}</Button>
           <Button
             icon={<IconRefresh />}
             disabled={loading}
@@ -64,7 +77,7 @@ export function QueryForm<TForm extends object>({
               onReset()
             }}
           >
-            {resetLabel}
+            {visibleResetLabel}
           </Button>
           {hasAdvancedFields && expandable && onExpandedChange && (
             <Button
@@ -72,7 +85,7 @@ export function QueryForm<TForm extends object>({
               icon={expanded ? <IconUp /> : <IconDown />}
               onClick={() => onExpandedChange(!expanded)}
             >
-              {expanded ? '收起' : '展开'}
+              {expanded ? visibleCollapseLabel : visibleExpandLabel}
             </Button>
           )}
           {actions}

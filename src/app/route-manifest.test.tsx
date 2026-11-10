@@ -1,9 +1,13 @@
+import type { RouteManifestGroup, RouteManifestPage } from './route-manifest'
+
 import type { CurrentUser } from '@/api/generated/models'
 
 import { describe, expect, it } from 'vitest'
 
 import {
   canAccessRoute,
+  createRouteMatches,
+  findRouteMatch,
   getNavigationGroup,
   getNavigationItem,
   getRouteMatch,
@@ -53,6 +57,31 @@ describe('route manifest structure', () => {
   it('preserves the result pages breadcrumb switch', () => {
     expect(getNavigationItem('/result/success')?.breadcrumb).toBe(false)
     expect(getNavigationItem('/result/error')?.breadcrumb).toBe(false)
+  })
+})
+
+describe('route matching for sub pages', () => {
+  const Page = () => null
+  const list = { kind: 'page', path: '/orders', component: Page, messageKey: 'menu.list.searchTable' } as const satisfies RouteManifestPage
+  const create = { kind: 'page', path: '/orders/new', component: Page, messageKey: 'menu.form.group', menu: false, parent: '/orders' } as const satisfies RouteManifestPage
+  const detail = { kind: 'page', path: '/orders/:id', component: Page, messageKey: 'menu.profile.basic', menu: false, parent: '/orders' } as const satisfies RouteManifestPage
+  const orphan = { kind: 'page', path: '/orphan/:id', component: Page, menu: false } as const satisfies RouteManifestPage
+  const group = { kind: 'group', key: 'orders', icon: null, messageKey: 'menu.list', children: [list] } as const satisfies RouteManifestGroup
+  // `detail` is listed before `create` on purpose: the exact path must still win.
+  const matches = createRouteMatches([group], [detail, create, orphan])
+
+  it('resolves parameterized paths and attaches hidden pages to their parent group', () => {
+    expect(findRouteMatch(matches, '/orders/42')).toEqual({ group, route: detail })
+    expect(findRouteMatch(matches, '/orphan/1')).toEqual({ group: undefined, route: orphan })
+  })
+
+  it('prefers an exact path over a parameterized one', () => {
+    expect(findRouteMatch(matches, '/orders/new')?.route).toBe(create)
+  })
+
+  it('does not match deeper or partial paths', () => {
+    expect(findRouteMatch(matches, '/orders/42/edit')).toBeUndefined()
+    expect(findRouteMatch(matches, '/order')).toBeUndefined()
   })
 })
 

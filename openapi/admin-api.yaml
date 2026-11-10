@@ -373,6 +373,29 @@ components:
             $ref: '#/components/schemas/RoleCode'
         dataScope:
           $ref: '#/components/schemas/DataScope'
+        contactUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: 账号没有任何权限时，“账号待开通”页面联系管理员的链接；为空时不显示按钮。
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 当前会话的空闲到期时间；服务端在认证请求上滑动续期。
+        absoluteExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 会话的绝对上限，达到后无论多活跃都必须重新登录。
+        environment:
+          type: string
+          nullable: true
+          description: 当前部署环境编码，例如 prod、staging；以 prod 开头时界面用醒目颜色提示。
+        environmentName:
+          type: string
+          nullable: true
+          description: 当前环境的展示名称；为空时回退为 environment。
     LoginRequest:
       type: object
       required: [email, password]
