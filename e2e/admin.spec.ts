@@ -111,9 +111,13 @@ test('opens every official Arco Design Pro route', async ({ page }) => {
 
   const menu = page.locator('.app-menu')
   for (const group of groups) {
+    const groupTitle = menu.getByText(group.label, { exact: true })
+    // The URL changes before the session resolves and the menu renders; checking too early would
+    // click an already open group and collapse it.
+    await expect(groupTitle).toBeVisible()
     const firstChild = menu.getByText(group.pages[0][0], { exact: true })
     if (!await firstChild.isVisible()) {
-      await menu.getByText(group.label, { exact: true }).click()
+      await groupTitle.click()
     }
     for (const [label, path] of group.pages) {
       await menu.getByText(label, { exact: true }).click()

@@ -14,6 +14,7 @@ import { LoadingScreen } from '@/app/LoadingScreen'
 import {
   canAccessRoute,
   getDefaultLandingPath,
+  lazyNamed,
   protectedRouteMatches,
   publicRouteManifest,
   redirectRouteManifest,
@@ -21,12 +22,14 @@ import {
 } from '@/app/route-manifest'
 import { clearSessionCache } from '@/app/session-cache'
 import { configureSessionExpiredHandler, toSafeReturnPath } from '@/app/session-expired'
-import { SessionExpiryWatcher } from '@/app/session-expiry'
 import { SessionErrorState } from '@/app/SessionErrorState'
 import { AccessDenied } from '@/components/AccessDenied'
 import { AccountPending } from '@/components/AccountPending'
 import { AppLayout } from '@/components/AppLayout'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+
+// Only needed after sign-in and renders nothing until a deadline is near, so keep it out of the entry chunk.
+const SessionExpiryWatcher = lazyNamed(() => import('@/app/session-expiry'), 'SessionExpiryWatcher')
 
 function PermissionRoute({ children, match }: { children: ReactNode, match: RouteMatch }) {
   const user = useAuth()
@@ -79,7 +82,10 @@ function ProtectedLayout() {
 
   return (
     <AuthProvider user={session.data}>
-      <SessionExpiryWatcher />
+      {/* Own boundary so loading the watcher chunk never suspends the layout. */}
+      <Suspense fallback={null}>
+        <SessionExpiryWatcher />
+      </Suspense>
       <Outlet />
     </AuthProvider>
   )
