@@ -1,8 +1,13 @@
 import type { DrawerProps } from '@arco-design/web-react'
 
 import type { ReactNode } from 'react'
-import { Drawer } from '@arco-design/web-react'
+import { Drawer, Message } from '@arco-design/web-react'
 import { useLocale } from '@/app/i18n'
+
+/** Arco 表单校验失败时 reject 的是带 errors 字段的对象，字段下已经有提示，不必再弹一次 */
+function isValidationRejection(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'errors' in error
+}
 
 export interface CrudDrawerProps {
   visible: boolean
@@ -44,7 +49,12 @@ export function CrudDrawer({
       cancelText={cancelText ?? t('crudDrawer.cancel')}
       onCancel={onCancel}
       onOk={() => {
-        void onConfirm()
+        // 确认按钮的失败不能静默：校验失败由字段提示，其他异常至少要让用户看到
+        void Promise.resolve(onConfirm()).catch((error) => {
+          if (isValidationRejection(error))
+            return
+          Message.error(t('crudDrawer.unexpectedError'))
+        })
       }}
       afterClose={afterClose}
       mountOnEnter={false}

@@ -4,8 +4,8 @@ import {
   Avatar,
   Badge,
   Button,
+  Empty,
   List,
-  Result,
   Tabs,
   Trigger,
   Typography,
@@ -48,7 +48,7 @@ export function NotificationPanel() {
       <Tabs
         defaultActiveTab="message"
         type="rounded"
-        extra={<Button type="text" onClick={() => setItems([])}>{t('message.empty')}</Button>}
+        extra={items.length > 0 ? <Button type="text" onClick={() => setItems([])}>{t('message.clear')}</Button> : null}
       >
         {(Object.keys(groupedItems) as NotificationCategory[]).map((category) => {
           const categoryItems = groupedItems[category]
@@ -64,7 +64,6 @@ export function NotificationPanel() {
                       footer={(
                         <div className="message-panel-footer">
                           <Button type="text" size="small" onClick={() => markCategoryRead(category)}>{t('message.allRead')}</Button>
-                          <Button type="text" size="small">{t('message.seeMore')}</Button>
                         </div>
                       )}
                     >
@@ -90,7 +89,7 @@ export function NotificationPanel() {
                       ))}
                     </List>
                   )
-                : <Result status="404" subTitle={t('message.empty.tips')} />}
+                : <Empty className="message-panel-empty" description={t('message.empty.tips')} />}
             </Tabs.TabPane>
           )
         })}
