@@ -242,8 +242,9 @@ body[arco-theme='dark'] .login-content { background: #fff; }
 .data-table-scrollbar:active::-moz-range-thumb { cursor: grabbing; }
 .data-table-scroll-hint { display: none; color: var(--color-text-3); font-size: 11px; text-align: right; }
 .data-table .arco-table-th { height: 44px; color: var(--color-text-1); background: var(--color-fill-1); }
-/* 页面里直接用 Arco Table 的地方跟 DataTable 保持同一套表头和行高 */
-.panel-card .arco-table-th { height: 44px; color: var(--color-text-1); background: var(--color-fill-1); }
+/* 页面里直接用 Arco Table 的地方跟 DataTable 保持同一套表头和行高。
+   用 :where() 把特异性压到 0，页面级规则（如 .user-list-card 的紧凑表头）仍能覆盖。 */
+:where(.panel-card) .arco-table-th { height: 44px; color: var(--color-text-1); background: var(--color-fill-1); }
 .data-table .arco-table-td { min-height: 58px; border-bottom-color: var(--color-border-1); }
 .data-table .arco-table-tr:hover .arco-table-td { background: var(--color-fill-2); }
 .page-state { display: flex; min-height: 180px; align-items: center; justify-content: center; gap: 12px; padding: 28px 20px; text-align: center; }
