@@ -1,0 +1,62 @@
+name: Visual baselines
+
+# 视觉基线必须是 Linux Chromium 渲染的结果（见 docs/page-development-guide.md）。
+# 本机是 macOS 时 pnpm e2e:visual:update 会直接拒绝，所以把重生成放在这里，
+# 由人手动触发，CI 自己更新快照并提交回当前分支。
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 为什么要重新生成基线（会写进提交信息）
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --config.engine-strict=false
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e:check-env
+        env:
+          PLAYWRIGHT_PROJECT: visual
+      - name: Regenerate linux snapshots
+        run: pnpm e2e:visual:update
+        env:
+          CI: true
+      - name: Upload diagnostics if the run failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baseline-diagnostics
+          path: |
+            playwright-report/visual/
+            test-results/visual/
+          if-no-files-found: warn
+      - name: Commit and push updated baselines
+        env:
+          # 通过环境变量传入，避免把用户输入直接拼进 shell
+          REASON: ${{ inputs.reason }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- e2e/visual.spec.ts-snapshots; then
+            echo "基线没有变化，跳过提交"
+            exit 0
+          fi
+          git add e2e/visual.spec.ts-snapshots
+          git commit -m "test: regenerate linux visual baselines" -m "$REASON"
+          git push
