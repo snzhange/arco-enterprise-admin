@@ -50,6 +50,7 @@ jobs:
         env:
           # 通过环境变量传入，避免把用户输入直接拼进 shell
           REASON: ${{ inputs.reason }}
+          TARGET_BRANCH: ${{ github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -59,4 +60,5 @@ jobs:
           fi
           git add e2e/visual.spec.ts-snapshots
           git commit -m "test: regenerate linux visual baselines" -m "$REASON"
-          git push
+          # checkout 检出的是分离 HEAD，必须显式指定目标分支，否则 git push 会失败
+          git push origin "HEAD:${TARGET_BRANCH}"
