@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: write
+  # 基线推送后需要显式触发 CI（见文末 "Trigger CI" 步骤）
+  actions: write
 
 jobs:
   regenerate:
@@ -47,6 +49,7 @@ jobs:
             test-results/visual/
           if-no-files-found: warn
       - name: Commit and push updated baselines
+        id: commit
         env:
           # 通过环境变量传入，避免把用户输入直接拼进 shell
           REASON: ${{ inputs.reason }}
@@ -56,9 +59,31 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git diff --quiet -- e2e/visual.spec.ts-snapshots; then
             echo "基线没有变化，跳过提交"
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git add e2e/visual.spec.ts-snapshots
           git commit -m "test: regenerate linux visual baselines" -m "$REASON"
           # checkout 检出的是分离 HEAD，必须显式指定目标分支，否则 git push 会失败
           git push origin "HEAD:${TARGET_BRANCH}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # 用默认 GITHUB_TOKEN 推送的提交不会触发 push 事件（GitHub 防止递归触发的机制），
+      # 基线提交因此永远拿不到 CI 验证。这里在推送成功后显式触发一次 CI。
+      - name: Trigger CI for the baseline commit
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          # push 到 workflow_dispatch 可调度之间有极短延迟，重试几次
+          for attempt in 1 2 3 4 5; do
+            if gh workflow run ci.yml --ref "$TARGET_BRANCH"; then
+              echo "已触发 ${TARGET_BRANCH} 上的 CI"
+              exit 0
+            fi
+            echo "触发失败（第 ${attempt} 次），5 秒后重试"
+            sleep 5
+          done
+          echo "::error::基线已推送，但触发 CI 失败，请手动重跑 ci.yml"
+          exit 1

@@ -124,4 +124,6 @@ pnpm e2e:visual
 
 端到端测试分为功能和视觉两条独立路径：`pnpm e2e:functional` 只运行行为断言，失败产物位于 `test-results/functional/`；`pnpm e2e:visual` 只运行视觉基线，差异产物位于 `test-results/visual/`。视觉基线固定为 Linux Chromium，普通命令不会覆盖快照。更新基线必须显式执行 `pnpm e2e:visual:update`，该命令只允许在 Linux CI 或 Playwright 容器中运行，并在同一变更中审查 actual、expected 和 diff；macOS 运行时缺少 Linux 快照会失败并提示对应平台文件，不应提交 `-darwin` 快照。
 
+需要在 Linux 上重生成基线时，手动触发 `Visual baselines` 工作流（`.github/workflows/visual-baselines.yml`）并填写原因；它会把快照提交回当前分支。由于 `GITHUB_TOKEN` 推送的提交不会触发 `push` 事件，该工作流在推送成功后会显式调度一次 `ci.yml`（经由其 `workflow_dispatch`）来验证新基线，无需再手工补空提交。
+
 `vendor/arco-design` 是源码参考和升级对照，不参与业务构建。运行时依赖通过 `pnpm-lock.yaml` 固定，便于 CI 和生产复现。
